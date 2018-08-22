@@ -27,76 +27,42 @@ const warnText = {
 1: '[CodeStyle] Brace on a new line'
 }
 
-function logError(error, file, line, column, contents) {
-	let errorMessage = `E${error} in ${file}`
-
-	if (line)
-		errorMessage += `:${line}`
-	if (column)
-		errorMessage += `:${column}`
-	errorMessage += `: ${errorText[error]}`
-	//if (str)
-	//	errorMessage += `\n'${str}'`
-	
-	err(errorMessage)
-	let currentStr = contents.split(/[\n]/)[line - 1]
-	err(currentStr)
-	err(Array(column + 1).join(' ') + '^')
-	
-	err({version: '0.0.1', error, errorText: errorText[error], file, line, column, str: currentStr.replace(/\r/, '')})
-
-	
-	return false
-}
-
 let currentName = 'Item.qml'
 let orig = "              \n         \n      Base	// крутой класс\n	  { \n\n  onBarChange : { if (value === 15) console.log ( function(value) { console.log(value) } (value)  } \n       \n\n            \n\n                            \n    property var foo: 6\n\n\n\n  onFooChange: console.log(value) \n        function hello() {}\n       property var bar: 15\n\n\n\n \n     property var baz: foo  ; property   var  kek: 'KEK'             +  bar\n    \n    }"
 
-class DranoqLangFileParser {
+class DranoqLangPrivateParser {
+	constructor(fileName, contents) {
+		this.fileName = fileName
+		this.contents = contents
+		this.line = 1
+		this.column = 1
+		this.work()
+	}
+
+	logError(error) {
+		let errorMessage = `E${error} in ${this.fileName}`
+
+		if (line)
+			errorMessage += `:${this.line}`
+		if (column)
+			errorMessage += `:${this.column}`
+		errorMessage += `: ${errorText[error]}`
+
+		err(errorMessage)
+		let currentStr = this.contents.split(/[\n]/)[line - 1]
+		err(currentStr)
+		err(Array(column + 1).join(' ') + '^')
+		err({version: '0.0.1', error, errorText: errorText[error], file: this.fileName, line: this.line, column: this.column, str: currentStr.replace(/\r/, '')})
+
+		return false
+	}
 	
-}
-
-class DranoqLang {
-	constructor() {
-		log('DranoqScript v0.0.1');
-	}
-
-	load(fileOrStr, isStr = false) {
-		if (isStr) {
-			this.work('string', fileOrStr);
-		} else {
-			const fs = require('fs');
-			fs.readFile(fileOrStr, 'utf8', (error, contents) =>
-				this.work(fileOrStr, contents)
-			);
-		}
- 
-		return true;
-	}
-
-	work(fName, contents) {
+	work() {
 		let parentName
-		//let orig_split = orig.split('\n')
-		//let q = []
-
-		/*
-		for(const orig_line of orig_split) {
-			line++;
-			for(const str of orig_line.split(/[\s;]/)) {
-				if (!str) continue
-				q.push({line, str})
-			}
-		}
-		*/
-		// temp
-		let gggg = 0
-		
 		// TODO: copy functions, slots, ignore comments
-		let line = 1
-		let column = 1
 		let isSpace = false
 		let strs = []
-		let strTemp = ''
+		let str = ''
 		let lineComment = false
 		let globalComment = false
 		let funcBlock = false
@@ -105,25 +71,25 @@ class DranoqLang {
 		
 		let expProp = {type: false, name: false, val: false, colon: false}
 
-		for(let i = 0; i !== contents.length; ++i) {
-			let ch = contents[i]
+		for(let i = 0; i !== this.contents.length; ++i) {
+			let ch = this.contents[i]
 			
 			if (ch === '\n' /*|| ch === '\r'*/) {
-				line++
+				this.line++
 				lineComment = false
-				column = 1
-			} else column++
+				this.column = 1
+			} else this.column++
 
 			if (ch === '/') {
-				if (contents[i + 1] === '/') {
+				if (this.contents[i + 1] === '/') {
 					lineComment = true
 					i++
-				} else if (contents[i + 1] === '*') {
+				} else if (this.contents[i + 1] === '*') {
 					globalComment = true
 				} else {
-					if (contents[i - 1] === '*') { globalComment = false; continue; }
+					if (this.contents[i - 1] === '*') { globalComment = false; continue; }
 						else
-					return logError(4, fName, line, column, contents)
+					return this.logError(4)
 				}
 			}
 			
@@ -131,22 +97,22 @@ class DranoqLang {
 			
 			if ([' ', '\t', '\n', '\r', ':'].indexOf(ch) !== -1) {
 				isSpace = true
-				if (!strTemp) continue
+				if (!str) continue
 				//log(expProp)
 
 				if (expProp.val) {
-					lets[lets.length - 1].value.push(strTemp)
+					lets[lets.length - 1].value.push(str)
 					
-					//log(strTemp.indexOf(';') !== - 1, strTemp.indexOf('\n') !== - 1)
+					//log(str.indexOf(';') !== - 1, str.indexOf('\n') !== - 1)
 					
 					if (ch === ';' || ch === '\n')
 						expProp.val = false
 				}
 
 				if (expProp.name) {
-					for(let j = 0; j !== lets.length; ++j) if (lets[j].name === strTemp) return logError(6, fName, line, column, contents)
-					if(strTemp[0] !== strTemp[0].toLowerCase()) return logError(5, fName, line, column, contents)
-					lets[lets.length - 1].name = strTemp
+					for(let j = 0; j !== lets.length; ++j) if (lets[j].name === str) return logError(6)
+					if(str[0] !== str[0].toLowerCase()) return logError(5)
+					lets[lets.length - 1].name = str
 					expProp.name = false
 					expProp.colon = true
 				}
@@ -158,27 +124,25 @@ class DranoqLang {
 					expProp.colon = false
 
 				if (expProp.type) {
-					lets[lets.length - 1].type = strTemp
+					lets[lets.length - 1].type = str
 					expProp.type = false
 					expProp.name = true
 				}
 				
-				if (strTemp === 'property' || strTemp === 'prop' || strTemp === 'let') {
+				if (str === 'property' || str === 'prop' || str === 'let') {
 					lets.push({name: '', type: '', value: []})
 					expProp.type = true
 				}
-
-				strs.push({str: strTemp, line, column: column - strTemp.length - 1})
-				strTemp = ''
+				
+				strs.push({str, line: this.line, column: this.column - str.length - 1})
+				str = ''
 			} else {
 				if (ch === ';' || ch === '\n' || ch === '}')
 					expProp.val = false
 
 				isSpace = false
-				strTemp += ch
+				str += ch
 			}
-			
-			//if (gggg++ > 10) break
 
 			//log(`'${ch}'`, [' ', '\t', '\n'].indexOf(ch) !== -1)		
 		}
@@ -274,6 +238,25 @@ class DranoqLang {
 		log(slots)
 		log(props)
 		//log('Lines:', line)
+	}
+}
+
+class DranoqLang {
+	constructor() {
+		log('DranoqScript v0.0.1');
+	}
+
+	load(fileOrStr, isStr = false) {
+		if (isStr) {
+			new DranoqLangPrivateParser('string', fileOrStr);
+		} else {
+			const fs = require('fs');
+			fs.readFile(fileOrStr, 'utf8', (error, contents) =>
+				new DranoqLangPrivateParser(fileOrStr, contents)
+			);
+		}
+ 
+		return true;
 	}
 }
 
