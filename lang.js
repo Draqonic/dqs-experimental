@@ -4,6 +4,7 @@
 // add support for prop or let together with property
 // prop var foor
 // let var bar
+// info for component: class name, file
 
 const log = console.log
 const warn = console.warning
@@ -18,14 +19,15 @@ const errorText = {
 2: 'No opening \'{\' for Component',
 3: 'No close \'{\' for Component',
 4: 'Missing /',
-5: 'Property name must stated from lower case symbol'
+5: 'Property name must stated from lower case symbol',
+6: 'Property duplicate'
 }
 const warnText = {
 0: '[CodeStyle] Extra semicolon',
 1: '[CodeStyle] Brace on a new line'
 }
 
-function logError(error, file, str, line, column, contents) {
+function logError(error, file, line, column, contents) {
 	let errorMessage = `E${error} in ${file}`
 
 	if (line)
@@ -37,11 +39,11 @@ function logError(error, file, str, line, column, contents) {
 	//	errorMessage += `\n'${str}'`
 	
 	err(errorMessage)
-	let currentStr = contents.split(/[\n\r]/)[line - 1]
+	let currentStr = contents.split(/[\n]/)[line - 1]
 	err(currentStr)
 	err(Array(column + 1).join(' ') + '^')
 	
-	err({version: '0.0.1', error, errorText: errorText[error], file, line, column, str: currentStr})
+	err({version: '0.0.1', error, errorText: errorText[error], file, line, column, str: currentStr.replace(/\r/, '')})
 
 	
 	return false
@@ -49,6 +51,10 @@ function logError(error, file, str, line, column, contents) {
 
 let currentName = 'Item.qml'
 let orig = "              \n         \n      Base	// крутой класс\n	  { \n\n  onBarChange : { if (value === 15) console.log ( function(value) { console.log(value) } (value)  } \n       \n\n            \n\n                            \n    property var foo: 6\n\n\n\n  onFooChange: console.log(value) \n        function hello() {}\n       property var bar: 15\n\n\n\n \n     property var baz: foo  ; property   var  kek: 'KEK'             +  bar\n    \n    }"
+
+class DranoqLangFileParser {
+	
+}
 
 class DranoqLang {
 	constructor() {
@@ -95,6 +101,9 @@ class DranoqLang {
 		let globalComment = false
 		let funcBlock = false
 		let cBraces = 0
+		let lets = []
+		
+		let expProp = {type: false, name: false, val: false, colon: false}
 
 		for(let i = 0; i !== contents.length; ++i) {
 			let ch = contents[i]
@@ -114,30 +123,71 @@ class DranoqLang {
 				} else {
 					if (contents[i - 1] === '*') { globalComment = false; continue; }
 						else
-					return logError(4, fName, contents[line], line, column, contents)
+					return logError(4, fName, line, column, contents)
 				}
 			}
 			
 			if (lineComment || globalComment) continue
 			
-			if ([' ', '\t', '\n', '\r'].indexOf(ch) !== -1) {
+			if ([' ', '\t', '\n', '\r', ':'].indexOf(ch) !== -1) {
 				isSpace = true
 				if (!strTemp) continue
+				//log(expProp)
+
+				if (expProp.val) {
+					lets[lets.length - 1].value.push(strTemp)
+					
+					//log(strTemp.indexOf(';') !== - 1, strTemp.indexOf('\n') !== - 1)
+					
+					if (ch === ';' || ch === '\n')
+						expProp.val = false
+				}
+
+				if (expProp.name) {
+					for(let j = 0; j !== lets.length; ++j) if (lets[j].name === strTemp) return logError(6, fName, line, column, contents)
+					if(strTemp[0] !== strTemp[0].toLowerCase()) return logError(5, fName, line, column, contents)
+					lets[lets.length - 1].name = strTemp
+					expProp.name = false
+					expProp.colon = true
+				}
+				//log(ch, expProp.colon, ch === ':')
+				
+				if (expProp.colon && ch === ':')
+					expProp.val = true
+				else
+					expProp.colon = false
+
+				if (expProp.type) {
+					lets[lets.length - 1].type = strTemp
+					expProp.type = false
+					expProp.name = true
+				}
+				
+				if (strTemp === 'property' || strTemp === 'prop' || strTemp === 'let') {
+					lets.push({name: '', type: '', value: []})
+					expProp.type = true
+				}
+
 				strs.push({str: strTemp, line, column: column - strTemp.length - 1})
 				strTemp = ''
-				continue
 			} else {
+				if (ch === ';' || ch === '\n' || ch === '}')
+					expProp.val = false
+
 				isSpace = false
 				strTemp += ch
 			}
+			
 			//if (gggg++ > 10) break
 
 			//log(`'${ch}'`, [' ', '\t', '\n'].indexOf(ch) !== -1)		
 		}
 
 		log(strs)
+		log(lets)
 
 		return
+		let q = strs
 
 		// check first char upper and first brace, get parent class name
 		let fisrtChar = q[0]['str'][0]
