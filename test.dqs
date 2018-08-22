@@ -1,0 +1,23 @@
+
+
+      Base      // крутой комментарий
+          {
+  onBarChange : { if (value === 15) console.log ( function(value) { console.log(value) } (value)  }
+
+// sa[odksdjiohsdi hsdofasdiof sdaofhsoadfh sdo;fjo;sd jsdo;fhasdf ousadfsdf
+
+
+
+    property var foo: 6
+
+
+
+  onFooChange: console.log(value)
+        function hello() {}
+       property var bar:15
+
+
+
+     property var baz: foo  ; property   var  kek: 'KEK'             +  bar
+
+    }
