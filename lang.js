@@ -1,9 +1,6 @@
 // TODO: dubl vars, props
 // global braces count (indexOf)
 // disable names for vars: https://mathiasbynens.be/notes/reserved-keywords
-// add support for prop or let together with property
-// prop var foor
-// let var bar
 // info for component: class name, file
 
 const log = console.log
@@ -13,14 +10,19 @@ const deb = console.debug
 
 const keyWords = ['property', 'function', '{', '}']
 const varTypes = ['int', 'number', 'string', 'bool', 'var', 'RegExp', 'Component', 'BigInt']
+const varDisableNames = ['do', 'if', 'in', 'for', 'let', 'new', 'try', 'var', 'case', 'else', 'enum', 'eval', 'null', 'this', 'true', 'void',
+							'with', 'await', 'break', 'catch', 'class', 'const', 'false', 'super', 'throw', 'while', 'yield', 'delete', 'export',
+							'import', 'public', 'return', 'static', 'switch', 'typeof', 'default', 'extends', 'finally', 'package', 'private',
+							'continue', 'debugger', 'function', 'arguments', 'interface', 'protected', 'implements', 'instanceof']
 const errorText = {
 0: 'Global error',
-1: 'Incorrent parent object name',
-2: 'No opening \'{\' for Component',
-3: 'No close \'{\' for Component',
+1: 'Incorrent parent component name', // TODO
+2: 'No opening \'{\' for Component', // TODO
+3: 'No close \'{\' for Component', // TODO
 4: 'Missing /',
 5: 'Property name must stated from lower case symbol',
-6: 'Property duplicate'
+6: 'Property duplicate',
+7: 'You cant use JS keywords for var names'
 }
 const warnText = {
 0: '[CodeStyle] Extra semicolon',
@@ -32,31 +34,37 @@ let orig = "              \n         \n      Base	// крутой класс\n	 
 
 class DranoqLangPrivateParser {
 	constructor(fileName, contents) {
+		log('compile', fileName)
 		this.fileName = fileName
-		this.contents = contents
+		this.contents = contents.replace(/\t/g, '    ')
 		this.line = 1
 		this.column = 1
+		this.nextColumn = 1
 		this.work()
 	}
 
-	logError(error) {
-		let errorMessage = `E${error} in ${this.fileName}`
+	logError(error, strlen, full = false) {
+		let errorMessage = `Error ${error} in ${this.fileName}`
+		let col = this.column
+		if (strlen) col -= strlen + 1
 
-		if (line)
+		if (this.line)
 			errorMessage += `:${this.line}`
-		if (column)
-			errorMessage += `:${this.column}`
+		if (col)
+			errorMessage += `:${col}`
 		errorMessage += `: ${errorText[error]}`
 
-		err(errorMessage)
-		let currentStr = this.contents.split(/[\n]/)[line - 1]
+		let currentStr = this.contents.split('\n')[this.line - 1].replace(/\t/g, '    ')
 		err(currentStr)
-		err(Array(column + 1).join(' ') + '^')
-		err({version: '0.0.1', error, errorText: errorText[error], file: this.fileName, line: this.line, column: this.column, str: currentStr.replace(/\r/, '')})
+		err(Array(col + 1).join(' ') + (full ? Array(strlen + 1).join('^') : '^'))
+		err()
+		err(errorMessage)
+		err()
+		err({error, errorText: errorText[error], file: this.fileName, line: this.line, column: col, str: currentStr.trim()})
 
 		return false
 	}
-	
+
 	work() {
 		let parentName
 		// TODO: copy functions, slots, ignore comments
@@ -74,11 +82,12 @@ class DranoqLangPrivateParser {
 		for(let i = 0; i !== this.contents.length; ++i) {
 			let ch = this.contents[i]
 			
+			this.column = this.nextColumn
 			if (ch === '\n' /*|| ch === '\r'*/) {
 				this.line++
 				lineComment = false
-				this.column = 1
-			} else this.column++
+				this.nextColumn = 1
+			} else this.nextColumn++
 
 			if (ch === '/') {
 				if (this.contents[i + 1] === '/') {
@@ -89,10 +98,10 @@ class DranoqLangPrivateParser {
 				} else {
 					if (this.contents[i - 1] === '*') { globalComment = false; continue; }
 						else
-					return this.logError(4)
+					return this.logError(4, str.length)
 				}
 			}
-			
+
 			if (lineComment || globalComment) continue
 			
 			if ([' ', '\t', '\n', '\r', ':'].indexOf(ch) !== -1) {
@@ -110,8 +119,9 @@ class DranoqLangPrivateParser {
 				}
 
 				if (expProp.name) {
-					for(let j = 0; j !== lets.length; ++j) if (lets[j].name === str) return logError(6)
-					if(str[0] !== str[0].toLowerCase()) return logError(5)
+					for(let j = 0; j !== lets.length; ++j) if (lets[j].name === str) { log('```````', str, '`'); return this.logError(6, str.length) }
+					if(str[0] !== str[0].toLowerCase()) return this.logError(5, str.length, true)
+					if (varDisableNames.indexOf(str) !== -1) return this.logError(7, str.length, true)
 					lets[lets.length - 1].name = str
 					expProp.name = false
 					expProp.colon = true
@@ -134,7 +144,7 @@ class DranoqLangPrivateParser {
 					expProp.type = true
 				}
 				
-				strs.push({str, line: this.line, column: this.column - str.length - 1})
+				strs.push({str, line: this.line, column: this.nextColumn})
 				str = ''
 			} else {
 				if (ch === ';' || ch === '\n' || ch === '}')
@@ -243,7 +253,9 @@ class DranoqLangPrivateParser {
 
 class DranoqLang {
 	constructor() {
-		log('DranoqScript v0.0.1');
+		//log('---------------------');
+		//log(' DranoqScript v0.0.1');
+		//log('---------------------\n');
 	}
 
 	load(fileOrStr, isStr = false) {
@@ -262,6 +274,3 @@ class DranoqLang {
 
 let lang = new DranoqLang
 lang.load('test.dqs')
-//lang.work('Item.qml', orig)
-//log(orig)
-//log('Done')
