@@ -160,6 +160,16 @@ class DranoqLangPrivateParser {
 
 		if (!this.checkComponentName(strs[0]))
 			return false
+		
+		// check start and end braces
+		if (strs[1].str !== '{') {
+			this.line = strs[0].line; this.column = strs[0].column
+			return this.logError(2, 0)
+		}
+		if (strs[strs.length - 1].str !== '}') {
+			this.line = strs[strs.length - 1].line; this.column = strs[strs.length - 1].column
+			return this.logError(3, 0)
+		}
 
 		log(strs)
 		log(lets)
