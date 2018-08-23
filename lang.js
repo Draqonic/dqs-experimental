@@ -17,13 +17,14 @@ const varDisableNames = ['do', 'if', 'in', 'for', 'let', 'new', 'try', 'var', 'c
 							'continue', 'debugger', 'function', 'arguments', 'interface', 'protected', 'implements', 'instanceof']
 const errorText = {
 0: 'Global error',
-1: 'Incorrent parent component name', // TODO
+1: 'Сomponent name must begin with a large english letter',
 2: 'No opening \'{\' for Component', // TODO
 3: 'No close \'{\' for Component', // TODO
 4: 'Missing /',
 5: 'Property name must stated from lower case symbol',
 6: 'Property duplicate',
-7: 'You cant use JS keywords for var names'
+7: 'You cant use JS keywords for var names',
+8: 'Component name can contains only A-Z, a-z, 0-9'
 }
 const warnText = {
 0: '[CodeStyle] Extra semicolon',
@@ -41,6 +42,7 @@ class DranoqLangPrivateParser {
 		this.line = 1
 		this.column = 1
 		this.nextColumn = 1
+		this.componentName = 'Unknown'
 		this.work()
 	}
 
@@ -66,7 +68,6 @@ class DranoqLangPrivateParser {
 	}
 
 	work() {
-		let parentName
 		// TODO: copy functions, slots, ignore comments
 		let isSpace = false
 		let strs = []
@@ -144,7 +145,7 @@ class DranoqLangPrivateParser {
 					expProp.type = true
 				}
 				
-				strs.push({str, line: this.line, column: this.nextColumn})
+				strs.push({str, line: this.line, column: this.column})
 				str = ''
 			} else {
 				if (ch === ';' || ch === '\n' || ch === '}')
@@ -157,9 +158,26 @@ class DranoqLangPrivateParser {
 			//log(`'${ch}'`, [' ', '\t', '\n'].indexOf(ch) !== -1)		
 		}
 
+		if (!this.checkComponentName(strs[0]))
+			return false
+
 		log(strs)
 		log(lets)
+		log('Parent name =', this.componentName)
 
+		return true
+	}
+	
+	checkComponentName(str) {
+		this.line = str.line; this.column = str.column
+		if (!/^[A-Z]+$/.test(str.str[0]))
+			return this.logError(1, str.length, false)
+
+		let compNameCheck = /[^A-Za-z0-9]+/g.exec(str.str)
+		if (compNameCheck)
+			return this.logError(8, str.length - compNameCheck.index)
+		this.componentName = str.str
+		
 		return true
 	}
 }
