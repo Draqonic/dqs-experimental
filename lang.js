@@ -3,6 +3,7 @@
 // disable names for vars: https://mathiasbynens.be/notes/reserved-keywords
 // info for component: class name, file
 // disable control for string: ' "" ` amd functions (move string and funcs as is)
+// copy functions, slots, ignore comments and funcs
 
 const log = console.log
 const warn = console.warning
@@ -24,26 +25,28 @@ const errorText = {
 5: 'Property name must stated from lower case symbol',
 6: 'Property duplicate',
 7: 'You cant use JS keywords for var names',
-8: 'Component name can contains only A-Z, a-z, 0-9'
+8: 'Component name can contains only A-Z, a-z, 0-9',
+9: 'Error */'
 }
 const warnText = {
 0: '[CodeStyle] Extra semicolon',
 1: '[CodeStyle] Brace on a new line'
 }
 
-let currentName = 'Item.qml'
-let orig = "              \n         \n      Base	// крутой класс\n	  { \n\n  onBarChange : { if (value === 15) console.log ( function(value) { console.log(value) } (value)  } \n       \n\n            \n\n                            \n    property var foo: 6\n\n\n\n  onFooChange: console.log(value) \n        function hello() {}\n       property var bar: 15\n\n\n\n \n     property var baz: foo  ; property   var  kek: 'KEK'             +  bar\n    \n    }"
-
 class DranoqLangPrivateParser {
 	constructor(fileName, contents) {
 		log('compile', fileName)
 		this.fileName = fileName
-		this.contents = contents.replace(/\t/g, '    ')
+		this.contents = contents.replace(/\t/g, '    ').replace(/\r/g, '')
 		this.line = 1
 		this.column = 1
 		this.nextColumn = 1
 		this.componentName = 'Unknown'
-		this.work()
+		try {
+			this.work()
+		} catch(err) {
+			log(err)
+		}
 	}
 
 	logError(error, strlen, full = false) {
@@ -51,10 +54,7 @@ class DranoqLangPrivateParser {
 		let col = this.column
 		if (strlen) col -= strlen + 1
 
-		if (this.line)
-			errorMessage += `:${this.line}`
-		if (col)
-			errorMessage += `:${col}`
+		errorMessage += `:${this.line}:${col}`
 		errorMessage += `: ${errorText[error]}`
 
 		let currentStr = this.contents.split('\n')[this.line - 1].replace(/\t/g, '    ')
@@ -62,96 +62,51 @@ class DranoqLangPrivateParser {
 		err(Array(col + 1).join(' ') + (full ? Array(strlen + 1).join('^') : '^'))
 		err(errorMessage)
 		err()
-		err({error, errorText: errorText[error], file: this.fileName, line: this.line, column: col, str: currentStr.trim()})
 
-		return false
+		throw {error, errorText: errorText[error], file: this.fileName, line: this.line, column: col, str: currentStr.trim()}
 	}
 
 	work() {
-		// TODO: copy functions, slots, ignore comments
-		let isSpace = false
 		let strs = []
 		let str = ''
-		let lineComment = false
-		let globalComment = false
 		let funcBlock = false
 		let cBraces = 0
 		let lets = []
 		
-		let expProp = {type: false, name: false, val: false, colon: false}
+		let comments = {line: false, global: false}
+		let expProp = {type: false, name: false, val: false, colon: false, check: function() { return this.type || this.name || this.val || this.colon } }
 
-		for(let i = 0; i !== this.contents.length; ++i) {
+		for(let i = 0; i !== this.contents.length; i++) {
 			let ch = this.contents[i]
-			
+
+			// line/column counter and \n action
 			this.column = this.nextColumn
-			if (ch === '\n' /*|| ch === '\r'*/) {
+			if (ch === '\n') {
 				this.line++
-				lineComment = false
+				comments.line = false
 				this.nextColumn = 1
 			} else this.nextColumn++
 
-			if (ch === '/') {
-				if (this.contents[i + 1] === '/') {
-					lineComment = true
-					i++
-				} else if (this.contents[i + 1] === '*') {
-					globalComment = true
-				} else {
-					if (this.contents[i - 1] === '*') { globalComment = false; continue; }
-						else
-					return this.logError(4, str.length)
-				}
+			// comments check and continue if comments mode
+			switch(this.checkComments(comments, ch, str, i)) {
+				case false: return false
+				case 2: continue; break
+				case 3: i++; break
 			}
+			if (comments.line || comments.global) continue
 
-			if (lineComment || globalComment) continue
-			
-			if ([' ', '\t', '\n', '\r', ':'].indexOf(ch) !== -1) {
-				isSpace = true
+			if ([' ', '\t', '\n', ':'].indexOf(ch) !== -1) {
 				if (!str) continue
-				//log(expProp)
 
-				if (expProp.val) {
-					lets[lets.length - 1].value.push(str)
-					
-					//log(str.indexOf(';') !== - 1, str.indexOf('\n') !== - 1)
-					
-					if (ch === ';' || ch === '\n')
-						expProp.val = false
-				}
+				this.checkProperty(lets, expProp, str, ch)
 
-				if (expProp.name) {
-					for(let j = 0; j !== lets.length; ++j) if (lets[j].name === str) return this.logError(6, str.length, true)
-					if(str[0] !== str[0].toLowerCase()) return this.logError(5, str.length, true)
-					if (varDisableNames.indexOf(str) !== -1) return this.logError(7, str.length, true)
-					lets[lets.length - 1].name = str
-					expProp.name = false
-					expProp.colon = true
-				}
-				//log(ch, expProp.colon, ch === ':')
-				
-				if (expProp.colon && ch === ':')
-					expProp.val = true
-				else
-					expProp.colon = false
-
-				if (expProp.type) {
-					lets[lets.length - 1].type = str
-					expProp.type = false
-					expProp.name = true
-				}
-				
-				if (str === 'property' || str === 'prop' || str === 'let') {
-					lets.push({name: '', type: '', value: []})
-					expProp.type = true
-				}
-				
-				strs.push({str, line: this.line, column: this.column})
+				//if (!expProp.check())
+					strs.push({str, line: this.line, column: this.column, toString: function() { return this.str } })
 				str = ''
 			} else {
 				if (ch === ';' || ch === '\n' || ch === '}')
 					expProp.val = false
 
-				isSpace = false
 				str += ch
 			}
 
@@ -160,7 +115,7 @@ class DranoqLangPrivateParser {
 
 		if (!this.checkComponentName(strs[0]))
 			return false
-		
+
 		// check start and end braces
 		if (strs[1].str !== '{') {
 			this.line = strs[0].line; this.column = strs[0].column
@@ -171,24 +126,83 @@ class DranoqLangPrivateParser {
 			return this.logError(3, 0)
 		}
 
-		log(strs)
+		log(strs.join(' '))
 		log(lets)
 		log('Parent name =', this.componentName)
 
 		return true
 	}
 	
+	checkComments(comments, ch, str, i) {
+		// 1 - nothing, 2 - continue, 3 - i++
+		let chPrev = this.contents[i - 1], chNext = this.contents[i + 1]
+		
+		if (ch === '/') {
+			if (chPrev === '*' && comments.global && this.contents[i - 2] !== '/' && !comments.line)
+				comments.global = false
+			else if (chNext === '*' && !comments.line) {
+				comments.global = true
+				//return 3
+			}
+			else if ((chNext === '/' || chPrev === '/'))
+				comments.line = true
+			else {
+				if (chPrev === '*' && !comments.global) throw this.logError(9)
+				if (!comments.line) throw this.logError(4)
+			}
+			
+			return 2
+		}
+
+		return 1
+	}
+
 	checkComponentName(str) {
+		if (!str) return false
 		this.line = str.line; this.column = str.column
 		if (!/^[A-Z]+$/.test(str.str[0]))
 			return this.logError(1, str.length, false)
 
 		let compNameCheck = /[^A-Za-z0-9]+/g.exec(str.str)
 		if (compNameCheck)
-			return this.logError(8, str.length - compNameCheck.index)
+			throw this.logError(8, str.length - compNameCheck.index)
 		this.componentName = str.str
 		
 		return true
+	}
+	
+	checkProperty(lets, expProp, str, ch) {
+		if (expProp.val) {
+			lets[lets.length - 1].value.push(str)
+	
+			if (ch === ';' || ch === '\n')
+				expProp.val = false
+		}
+
+		if (expProp.name) {
+			for(let j = 0; j !== lets.length; ++j) if (lets[j].name === str) throw this.logError(6, str.length, true)
+			if(str[0] !== str[0].toLowerCase()) throw this.logError(5, str.length, true)
+			if (varDisableNames.indexOf(str) !== -1) throw this.logError(7, str.length, true)
+			lets[lets.length - 1].name = str
+			expProp.name = false
+			expProp.colon = true
+		}
+
+		if (expProp.colon && ch === ':')
+			expProp.val = true
+		else
+			expProp.colon = false
+
+		if (expProp.type) {
+			lets[lets.length - 1].type = str
+			expProp.type = false
+			expProp.name = true
+		}
+
+		if (str === 'property' || str === 'prop' || str === 'let') {
+			lets.push({name: '', type: '', value: []})
+			expProp.type = true
+		}
 	}
 }
 
@@ -214,4 +228,5 @@ class DranoqLang {
 }
 
 let lang = new DranoqLang
-lang.load('test.dqs')
+try{
+lang.load('test.dqs') } catch(err) { log('!!!!!!!!!!!!', err) }
