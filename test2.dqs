@@ -1,0 +1,26 @@
+/*////
+sdads
+*////
+
+Base { ////
+	prop lazy int foo: 150
+  prop int bar: 150 * foo - 50
+  prop int baz: {
+    return foo * 10
+  }
+  bak: {
+    return baz - 50
+  }
+  
+	async func hello(world) {
+    if(something)
+      console.log('code')
+	}
+
+  onCreate: {
+    log(this.className, ' created!')
+  }
+
+  onFooChange: log('Foo * 5 =', value * 5)
+  prop string bar: 'Hello, everything!'
+}
