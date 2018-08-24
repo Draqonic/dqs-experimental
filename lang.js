@@ -45,6 +45,13 @@ class DSParser {
 		this.nextColumn = 1
 		this.componentName = 'Unknown'
 
+		this.imports = []
+		this.props = []
+		this.funcs = []
+		this.slots = []
+		this.objs = []
+		this.propFuncs = []
+
 		try {
 			this.firstStep()
 			this.work()
@@ -73,7 +80,6 @@ class DSParser {
 	firstStep() {
 		let all = this.all, strs = this.strs
 
-		this.funcs = []
 		let func = ''
 		let b = {count: 0, mode: false, i: -1}
 		let tempB

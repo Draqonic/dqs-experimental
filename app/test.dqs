@@ -1,8 +1,8 @@
   // /// / // / // // //
-  
-      Base    
 
+//import DP.WebServer as WS
 
+      Object    
 
 
 
@@ -12,7 +12,7 @@
        
            // hello
 
-           proppy
+           proppie
            
            
             {
@@ -22,7 +22,7 @@
            }
 
 
-           Base {
+           Object {
              prop int hello: 5
 
              //
@@ -35,7 +35,7 @@
 
 
 
-  { 
+  {   
     if (value === 15) console.log ( function(value) { console.log(value) } (value)
     }
 
