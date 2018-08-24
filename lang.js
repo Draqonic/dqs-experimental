@@ -5,12 +5,19 @@
 // disable control for string: ' "" ` amd functions (move string and funcs as is)
 // copy functions, slots, ignore comments and funcs
 
+class Timer {
+	static singleShot(interval, func) {
+		setTimeout(func, interval)
+	}
+}
+
 'use strict';
 const log = console.log
 const warn = console.warning
 const err = console.error
 const deb = console.debug
 
+const warnEnabled = false
 const keyWords = ['property', 'function', '{', '}']
 const varTypes = ['int', 'number', 'string', 'bool', 'var', 'RegExp', 'Component', 'BigInt']
 const varDisableNames = ['do', 'if', 'in', 'for', 'let', 'new', 'try', 'var', 'case', 'else', 'enum', 'eval', 'null', 'this', 'true', 'void',
@@ -27,11 +34,12 @@ const errorText = {
 6: 'Property name must stated from lower case symbol', // TODO
 7: 'Property duplicate', // TODO
 8: 'You cant use JS keywords for var names', // TODO
-9: 'Error */' // TODO
+9: 'Error */', // TODO
+10: 'No close } for {'
 }
 const warnText = {
-0: '[CodeStyle] Extra semicolon',
-1: '[CodeStyle] Brace on a new line'
+0: '[CodeStyle] Extra semicolon', // TODO
+1: '[CodeStyle] Open brace on a new line'
 }
 
 class DSParser {
@@ -60,13 +68,14 @@ class DSParser {
 		}
 	}
 
-	logError(errNumber, l, c, full) {
-		if (!l || !c) {
+	logError(errNumber, l, c, full, isWarn) {
+		if(isWarn) var errorText = warnText
+		if ((!l || !c) && !isWarn) {
 			err('Error:', errorText[errNumber])
 			throw {error: errNumber, errorText: errorText[errNumber]}
 			return
 		}
-		let errorMessage = `${this.fileName}:${l}:${c}: ${errorText[errNumber]}`
+		let errorMessage = `${this.fileName}:${++l}:${++c}: ${errorText[errNumber]}`
 		let currentStr = this.all[l - 1].replace(/\t/g, '    ').replace(/\r/g, '    ')
 
 		err(currentStr)
@@ -74,7 +83,13 @@ class DSParser {
 		err(errorMessage)
 		err()
 
-		throw {error: errNumber, errorText: errorText[errNumber], file: this.fileName, line: l, column: c, str: currentStr.trim()}
+		if (!isWarn)
+			throw {error: errNumber, errorText: errorText[errNumber], file: this.fileName, line: l, column: c, str: currentStr.trim()}
+	}
+	
+	logWarn(warnNumber, l, c) {
+		if(warnEnabled)
+			this.logError(1, l, c, 0, true)
 	}
 
 	firstStep() {
@@ -82,7 +97,7 @@ class DSParser {
 
 		let func = ''
 		let b = {count: 0, mode: false, i: -1}
-		let tempB
+		let tempB, tempI, tempJ, tempBB
 
 		for(let i = 0; i !== all.length; i++) {
 			let str = ''
@@ -103,63 +118,70 @@ class DSParser {
 				}
 
 				if (ch === '{') {
+					if (strs[strs.length - 1] && strs[strs.length - 1].s === '\n' && !b.mode)
+						this.logWarn(1, i, j - 1)
+
 					if (!tempB)
 						tempB = true
-					else
+					else {
 						b.mode = true
+						if (!tempBB) {
+							tempI = i, tempJ = j
+							tempBB = true
+						}
+					}
 				}	
 
 				if (b.mode) { // TODO: inline slot
-					if (ch === '{') { b.count++; b.start = true }
+					if (ch === '{') {
+						b.count++
+						b.start = true
+					}
 					if (ch === '}') b.count--
 					func += ch
 
 					if ((b.count === 0 && b.start) || !b.mode) {
 						let newFunc = func.trim(); func = ''
-						if (newFunc[0] !== '{' || i === all.length - 2) throw this.logError(0) // TODO: fix
-						b.mode = false; b.start = false
+						if (newFunc[0] !== '{' || i === all.length - 2) throw this.logError(10, tempI, tempJ)
+						b.mode = false; b.start = false; tempBB = false
 						//this.funcs[this.funcs.length - 1].body = newFunc
-						strs.push({s: newFunc, l: i, c: j, func: true })
+						strs.push({s: newFunc, l: tempI, c: tempJ, func: true })
 					}
-				} else if (ch === ';') { // add objs to array, not add
-					if (strs[strs.length - 1].s !== '\n') strs.push({s: '\n'})
-				} else if (ch !== ' ')
+				} else if (ch !== ' ' && ch !== ';') {
 					str += ch
+				}
 				else {
 					if (str) {// TODO: maybe not add symbols at end?
-						// if (strs[strs.length - 1])
-						// log(strs[strs.length - 1].s, str.substr(0, 2) === 'on')
-						// log(str, str.substr(0, 2) === 'on', strs[strs.length - 1])
-						// if (str.substr(0, 1) === 'on' && (strs[strs.length - 1] && strs[strs.length - 1].s === '\n')) {
-						// 	b.mode = true
-						// 	this.funcs.push({name: str, body: ''})
-						// }
 						if (!b.mode)
 							strs.push({s: str, l: i, c: j - str.length })
+
+							
 					}
+
+					if (ch === ';' && strs[strs.length - 1].s !== '\n')
+						strs.push({s: '\n'})
+
 					str = ''
 				}
 			}
 
-			if (strs[strs.length - 1] && strs[strs.length - 1].s !== '\n')
+			if (strs[strs.length - 1] && strs[strs.length - 1].s !== '\n') {
 				strs.push({s:'\n'})
+			}
 		}
 		if (func) throw this.logError(0) // TODO
-
 		if (strs[0].s === '\n') strs.splice(0, 1)
 		if (strs[1].s === '\n') strs.splice(1, 1)
 		if (strs[strs.length - 1].s === '\n') strs.splice(strs.length - 1, 1)
-
-		//log(this.funcs)
-		log(this.strs)
 	}
 
 	work() { // function, prop, Class, on
 		let strs = this.strs
-		// log(strs)
-		return
+		log(strs)
+		
 
 		this.checkComponentName(strs[0].s)
+		return
 
 		// // check start and end braces
 		// if (strs[1][0].s !== '{') {
@@ -253,7 +275,7 @@ class DranoqScript {
 }
 
 const script = new DranoqScript
-script.load('app/test.dqs')
+script.load('app/app.dqs')
 
 
 				// if (c === 1 && str.s !== '{')
@@ -263,3 +285,5 @@ script.load('app/test.dqs')
 				// 	log(c, str)
 				// 	throw this.logError(3, str.l, str.c + str.s.length)
 				// }
+
+//Timer.singleShot(10000, function() {log(script)})

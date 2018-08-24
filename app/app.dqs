@@ -30,7 +30,7 @@
 
            }
 
-		   onCreated:   { log('some logs') }
+		   onCreate:   { log('some logs') }
   onBarChange: 
 
 
@@ -43,11 +43,13 @@
 	prop 
 					int
 						some;        prop 
-	int  foo: 6
+	int  foo: 6;
 
  prop Component sss: Base {
     prop int hello: 10
  }
+
+ property enum you {One, Two, Three}: Two
 	
 	prop int bar: { 
 		return 5 * 10+foo
@@ -56,17 +58,15 @@
 
   onFooChange: { console.log(value) // hello
      }
-        function async hello() { dasdasd a
+        function async hello() { aaa
         
         
-        da asdas
-        
-        
-        
-         das dfkjd jgdf }
-       property var bak:[ 34,
-       323,342]
+              bbb
+           }
+       
 
-     property number baz: foo ;  prop   var  kek: 'KEK'             +  bar
+     property number baz: foo ;  property var bak:[ 34,
+       323,342]
+       // prop   var  kek: 'KEK'             +  bar
      }
     

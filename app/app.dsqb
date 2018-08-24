@@ -1,0 +1,22 @@
+Object
+    proppie
+        hello: 5
+        one: two
+
+    Object
+        prop int hello: 5
+
+    onCreate:
+        log()
+
+    onBarChange
+        if (hello === 5)
+            hello = 6
+
+    prop int some
+    prop var bak
+
+    function hello()
+        let g = true
+        if (g)
+            log('lol', g)
