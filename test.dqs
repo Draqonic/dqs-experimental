@@ -1,29 +1,72 @@
-
-      Base      // крутой комментарий
-          {
-		  
-		  // onCreated: { }
-  onBarChange : { if (value === 15) console.log ( function(value) { console.log(value) } (value)  }
-
-// sa[odksdjiohsdi hsdofasdiof sdaofhsoadfh sdo;fjo;sd jsdo;fhasdf ousadfsdf
+  // /// / // / // // //
+  
+      Base    
 
 
-	let 
+
+
+
+
+      
+      {
+       
+           // hello
+
+           proppy
+           
+           
+            {
+                hello: 5
+            one: two
+
+           }
+
+
+           Base {
+             prop int hello: 5
+
+             //
+
+
+           }
+
+		   onCreated:   { log('some logs') }
+  onBarChange: 
+
+
+
+  { 
+    if (value === 15) console.log ( function(value) { console.log(value) } (value)
+    }
+
+
+	prop 
 					int
-					/*									*/		some
-
-    let 
+						some;        prop 
 	int  foo: 6
+
+ prop Component sss: Base {
+    prop int hello: 10
+ }
 	
-	let int bar: { 
+	prop int bar: { 
 		return 5 * 10+foo
 	}
 
 
-  onFooChange: console.log(value)
-        function hello() {}
-       property var bak:15
+  onFooChange: { console.log(value) // hello
+     }
+        function async hello() { dasdasd a
+        
+        
+        da asdas
+        
+        
+        
+         das dfkjd jgdf }
+       property var bak:[ 34,
+       323,342]
 
      property number baz: foo ;  prop   var  kek: 'KEK'             +  bar
-
-    }
+     }
+    
