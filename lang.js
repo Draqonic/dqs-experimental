@@ -247,7 +247,7 @@ class DranoqScript {
 }
 
 const script = new DranoqScript
-script.load('test.dqs')
+script.load('app/test.dqs')
 
 
 				// if (c === 1 && str.s !== '{')
