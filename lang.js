@@ -18,12 +18,13 @@ const err = console.error
 const deb = console.debug
 
 const warnEnabled = false
-const keyWords = ['property', 'function', '{', '}']
-const varTypes = ['int', 'number', 'string', 'bool', 'var', 'RegExp', 'Component', 'BigInt']
+//const keyWords = ['property', 'function', '{', '}']
+const varTypes = ['int', 'number', 'string', 'bool', 'var', 'any', 'enum', 'lazy', 'const', 'RegExp', 'BigInt'] // TODO: remove var
+//TODO: all with big char, string, примитив
 const varDisableNames = ['do', 'if', 'in', 'for', 'let', 'new', 'try', 'var', 'case', 'else', 'enum', 'eval', 'null', 'this', 'true', 'void',
 							'with', 'await', 'break', 'catch', 'class', 'const', 'false', 'super', 'throw', 'while', 'yield', 'delete', 'export',
 							'import', 'public', 'return', 'static', 'switch', 'typeof', 'default', 'extends', 'finally', 'package', 'private',
-							'continue', 'debugger', 'function', 'arguments', 'interface', 'protected', 'implements', 'instanceof', 'Object', 'Boolean', 'String']
+							'continue', 'debugger', 'function', 'arguments', 'interface', 'protected', 'implements', 'instanceof', 'boolean', 'string']
 const errorText = {
 0: 'Total error',
 1: 'Сomponent name must begin with a large english letter',
@@ -33,9 +34,10 @@ const errorText = {
 5: 'Missing /',
 6: 'Property name must stated from lower case symbol', // TODO
 7: 'Property duplicate', // TODO
-8: 'You cant use JS keywords for var names', // TODO
+8: 'You cant use JS keywords and DS type for var names', // TODO
 9: 'Error */', // TODO
-10: 'No close } for {'
+10: 'No close } for {',
+11: 'Unknown property type'
 }
 const warnText = {
 0: '[CodeStyle] Extra semicolon', // TODO
@@ -61,6 +63,7 @@ class DSParser {
 		this.propFuncs = []
 
 		try {
+			// this.exp()
 			this.firstStep()
 			this.work()
 		} catch(err) {
@@ -69,13 +72,13 @@ class DSParser {
 	}
 
 	logError(errNumber, l, c, full, isWarn) {
-		if(isWarn) var errorText = warnText
+		let errorT = isWarn ? warnText[errNumber] : errorText[errNumber]
 		if ((!l || !c) && !isWarn) {
-			err('Error:', errorText[errNumber])
-			throw {error: errNumber, errorText: errorText[errNumber]}
+			err('Error:', errorT)
+			throw {error: errNumber, errorText: errorT}
 			return
 		}
-		let errorMessage = `${this.fileName}:${++l}:${++c}: ${errorText[errNumber]}`
+		let errorMessage = `${this.fileName}:${++l}:${++c}: ${errorT}`
 		let currentStr = this.all[l - 1].replace(/\t/g, '    ').replace(/\r/g, '    ')
 
 		err(currentStr)
@@ -90,6 +93,110 @@ class DSParser {
 	logWarn(warnNumber, l, c) {
 		if(warnEnabled)
 			this.logError(1, l, c, 0, true)
+	}
+
+	exp() {
+		let all = this.all, strs = this.strs
+		//let m = {b, v} // mode.brace/value
+		let mode = false
+		let val
+
+		let comp = {name: '', right: false}
+		for(let i = 0; i !== all.length; i++) {
+			let strTemp = ''
+			if (!all[i]) continue
+			all[i] += ' '
+			for(let j = 0; j !== all[i].length; ++j) {
+				let ch = all[i][j]
+				
+				if (ch === ' ') {
+					let str = strTemp.trim()
+					if (str) {
+						strs.push({str, l: i, c: j})
+					}
+					strTemp = ''
+				}
+				else {
+					if (ch === ':')
+						strs.splice(strs.length - (all[i][j - 1] === ' ' ? 1 : 0), 0, {str: ':', v: true, l: i, c: j})
+					else
+						strTemp += ch
+				}
+			}
+		}
+		comp.name = strs[0].str
+		if (strs[1].str === '{' && strs[strs.length - 1].str === '}') {
+			strs.splice(0, 2)
+			strs.splice(strs.length - 1, 1)
+			comp.right = true
+		}
+
+		let strs2 = []
+		let props = []
+		for(let i = 0; i !== strs.length; ++i) {
+			let str = strs[i]
+			log(str)
+			if (str.v) {
+				
+			}
+
+		}
+
+		log(strs2)
+		// log(comp)
+
+		return
+
+		for(let i = 0; i !== all.length; i++) {
+			let str = ''
+			if (!all[i]) continue
+			all[i] += ' '
+			let abort = false
+			let modeStop
+			let last = ''
+
+			for(let j = 0; j !== all[i].length && !abort; ++j) {
+				let ch = all[i][j]
+
+
+
+				
+				let sss = str.trim()
+				if (ch === ' ' || ch === ':') {
+					if ((!mode || sss.indexOf(':')) && sss)
+						strs.push({sss, mode})
+					last = str
+					str = ''
+				}
+				else
+					str += ch
+				
+				if (ch === ':')
+					mode = true			
+
+
+				// 	if (modeStop) {
+				// 		if (val)
+				// 			strs.push({val})
+				// 		val = ''
+				// 		mode = false
+				// 	}
+				// 	if (mode)
+				// 		val += ch
+
+				if (str[str.length - 1] && str[str.length - 1].sss === ':') {
+					strs[strs.length - 1].mode = false
+					log('>>>', strs[strs.length - 1].sss)
+				}
+				if ((str === 'prop' || (str[str.length - 1] && str[str.length - 1].sss === ':')) && mode)
+					mode = false
+
+				if (last) log(last)
+			}
+		}
+		// log(val)
+
+		// log(strs)
 	}
 
 	firstStep() {
@@ -147,8 +254,11 @@ class DSParser {
 						//this.funcs[this.funcs.length - 1].body = newFunc
 						strs.push({s: newFunc, l: tempI, c: tempJ, func: true })
 					}
-				} else if (ch !== ' ' && ch !== ';') {
-					str += ch
+				} else if (ch !== ' ' || ch === ':') {
+					if (ch === ':')
+						strs.splice(strs.length - (all[i][j - 1] === ' ' ? 1 : 0), 0, {s: ':', v: true, l: i, c: j})
+					else if (ch !== ';')
+						str += ch
 				}
 				else {
 					if (str) {// TODO: maybe not add symbols at end?
@@ -158,16 +268,16 @@ class DSParser {
 							
 					}
 
-					if (ch === ';' && strs[strs.length - 1].s !== '\n')
-						strs.push({s: '\n'})
+					//if (ch === ';' && strs[strs.length - 1].s !== '\n')
+					//	strs.push({s: '\n'})
 
 					str = ''
 				}
 			}
 
-			if (strs[strs.length - 1] && strs[strs.length - 1].s !== '\n') {
-				strs.push({s:'\n'})
-			}
+			//if (strs[strs.length - 1] && strs[strs.length - 1].s !== '\n') {
+			//	strs.push({s:'\n'})
+			//}
 		}
 		if (func) throw this.logError(0) // TODO
 		if (strs[0].s === '\n') strs.splice(0, 1)
@@ -177,45 +287,115 @@ class DSParser {
 
 	work() { // function, prop, Class, on
 		let strs = this.strs
-		log(strs)
-		
-
-		this.checkComponentName(strs[0].s)
-		return
-
-		// // check start and end braces
-		// if (strs[1][0].s !== '{') {
-		// 	log(strs[1][0])
-		// 	return this.logError(2, strs[0][0].l, strs[0][0].c + strs[0][0].s.length)
+		// let prev = (i) => this.strs[i - 1] ? (this.strs[i - 1].s === '\n' ? this.strs[i - 2] : this.strs[i - 1]) : undefined
+		// let next = (i) => this.strs[i + 1] ? (this.strs[i + 1].s === '\n' ? this.strs[i + 2] : this.strs[i + 1]) : undefined
+		// let nextFive = (i) => {
+		// 	let givi = []
+		// 	while(givi.length !== 5 && i < strs.length) { // && i !== this.strs.length
+		// 		if (strs[i + 1].s !== '\n')
+		// 			givi.push(strs[i++ + 1])
+		// 		else
+		// 			i++
+		// 		// log(givi.length, strs[i++])
+		// 	}
+		// 	return givi
 		// }
-		// let strsLast = strs[strs.length - 1]
-		// if (strsLast[strsLast.length - 1].s !== '}') {
-		// 	return this.logError(3, strsLast[strsLast.length - 1].l, strsLast[strsLast.length - 1].c)
-		// } 	
-		//let sss = [] // sss.push(str.s)
+	
+		// let next = (i) => {
+		// 	let p = this.strs[i - 1].s === '\n' ? this.strs[i - 2] : this.strs[i - 1]
+		// 	return p
+		// }
+		//log(strs)
+		
+		
+		this.checkComponentName(strs[0].s)
+		this.checkFirstLastBraces()
+		this.componentName = strs[0].s
+		strs.splice(0, 2)
+		strs.splice(strs.length - 1, 1)
+		// log(strs)
 
-		// check start and end braces
-		if (strs[1].s !== '{')
-			throw this.logError(3)
-		if (strs[strs.length - 1].s !== '}' && strs[strs.length - 1].s[strs[strs.length - 1].s.length - 1] !== '}')
-			throw this.logError(4)
+		let funcs = [] // TODO
+		let childs = []
+		let slots = [] // done
+		let newProps = [] // done
+		let chProps = [] // done
+		for(let i = 0; i !== strs.length; ++i) {
+			let pprev = strs[i - 2], prev = strs[i - 1], str = strs[i], next = strs[i + 1], nnext = strs[i + 2], nnnext = strs[i + 3]
+
+			if (str.s === ':') {
+				if (pprev.s === 'prop') { // if new prop with value
+					this.checkVar(next, prev)
+					let value
+					if (nnext) {
+						value = nnext.s
+						
+						if (/^[A-Z]+$/.test(nnext.s[0])) {
+							// TODO: if (func)
+							if (nnnext)
+								value += nnnext.s
+						}
+					}
+					if (varTypes.indexOf(prev.s) === -1) this.logError(11, prev.l, prev.c - 1, prev.s.length)
+					newProps.push({name: next.s, type: prev.s, value})
+				}
+			}
+
+			if (str.s === 'prop' && nnext.s !== ':') {
+				this.checkVar(nnext, next)
+				newProps.push({name: nnext.s, type: next.s, value: ''})
+			}
+
+			if (pprev && pprev.s !== 'prop' && str.s === ':') {
+				if (next.s.substr(0, 2) === 'on') {
+					slots.push({name: next.s, value: nnext.s})
+				} else if (next.s[next.s.length - 1] === ')') {
+					//log('this is function')
+				} else { // change parent properties // TODO: check '.'
+					chProps.push({name: next.s, value: nnext.s})
+				}
+			}
+		}
 
 		//log(strs)
+		//log(chProps)
 
-		let g = 0
+		// return
+		// let g = 0
 
-		let b = {func: false, openBrace: false}
-		let braces = 0
-		let props
-		let funcs
-		let slots
+		// let b = {func: false, openBrace: false}
+		// let braces = 0
+		
+		// let funcs = []
 
-		for(let i = (strs[2].s === '\n' ? 3 : 2); i !== strs.length; ++i) {
-			let str = strs[i]
-		//	log(str)
+		// let mode = {prop: false, reset: function() { this.prop = false }}
 
+		// for(let i = (strs[2].s === '\n' ? 3 : 2); i !== strs.length; ++i) {
+		// 	if(strs[i].s === '\n' || strs[i].func) continue
+		// 	let str = strs[i]
+		// 	//log(next(i))
 
-		}
+		// 	if(str.s === 'prop' || str.s === 'property') {
+		// 		mode.prop = true
+		// 		props.push([])
+		// 		let next5 = nextFive(i)
+		// 		// log(str.s, next(i + 1).s, next(i + 2).s, next(i + 3).s)
+		// 		let n = next5[0]
+		// 		if (varTypes.indexOf(n.s) !== -1)
+		// 			props[props.length - 1].type = n.s
+		// 		else
+		// 			this.logError(11, n.l, n.c - 1, n.s.length)
+		// 		props[props.length - 1].name = next5[1].s
+		// 		if (next5[1].s[next5[1].s.length - 1] === ':' || next5[2].s[0] === ':')
+		// 			log(next5[1].s, next5[2].s)
+
+		// 	} //else {
+		// 		// mode.reset()
+		// 	// }
+		// }
+
+		// log(strs)
+		// log(props)
 
 		// for(let i = 0; i !== strs.length; ++i) {
 		// 	let strg = strs[i], abort = false
@@ -242,14 +422,30 @@ class DSParser {
 
 	checkComponentName(str) {
 		if (!str) return
-		this.line = str.line; this.column = str.column
+
 		if (!/^[A-Z]+$/.test(str[0]))
 			return this.logError(1)
 
 		let compNameCheck = /[^A-Za-z0-9]+/g.exec(str)
 		if (compNameCheck)
 			throw this.logError(2)
-		this.componentName = str.str
+	}
+
+	checkFirstLastBraces() {
+		let strs = this.strs
+
+		if (strs[1].s !== '{')
+			throw this.logError(3)
+		if (strs[strs.length - 1].s !== '}' && strs[strs.length - 1].s[strs[strs.length - 1].s.length - 1] !== '}')
+			throw this.logError(4)
+	}
+
+	checkVar(name, type) {
+		if (varTypes.indexOf(type.s) === -1)
+			this.logError(11, type.l, type.c - 1, type.s.length)
+		if (varTypes.indexOf(name.s) !== -1 ||
+			varDisableNames.indexOf(name.s) !== -1)
+				this.logError(8, name.l, name.c - 2)
 	}
 }
 
