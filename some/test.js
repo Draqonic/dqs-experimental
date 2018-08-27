@@ -42,6 +42,7 @@ class DSObject extends EventEmitter {
 		super()
 		this.parent = null
 		this._binds = []
+		this._signals = []
 		this.child = []
 		this.types = {}
 		//TODO onCreate
@@ -89,6 +90,14 @@ class DSObject extends EventEmitter {
 			value: function() { this.emit(change, this[privProp], this[privProp]) },
 			writable: false
 		});
+		this[change].Name = change
+		this[change].connect = function(slot) {
+			if (!slot) {
+				error(`Error: Undefined slot for signal '${change}'`)
+				return
+			}
+			this.connect(change, slot.Name ? slot.Name : slot)
+		}.bind(this)
 
 		let val
 		switch(type) {
@@ -105,15 +114,56 @@ class DSObject extends EventEmitter {
 	}
 
 	onChange(prop, func) {
+		if (!func) return error('Error: need function for onChange ' + prop)
 		this.on(`${prop}Change`, func)
 	}
 
 	signal(name, func) {
+		if (!func) func = function() {}
 		Object.defineProperty(this, name, {
 			value: function(...values) { this.emit(name, ...values) },
 			writable: false
 		});
+		this[name].Name = name
+		this[name].connect = function(slot) {
+			if (!slot) {
+				error(`Error: Undefined slot for signal '${name}'`)
+				return
+			}
+			this.connect(name, slot.Name ? slot.Name : slot)
+		}.bind(this)
 		this.on(name, func)
+	}
+
+	connect(signal, slot) {
+		if (typeof slot === 'string') {
+			// TODO: check if signal or slot exists
+			if (signal === slot) {
+				error(`Error: Disable connect '${signal}' to '${signal}'.`)
+				return false
+			}
+
+			for(const signals of this._signals) {
+				if (signals.signal === slot && signals.slot === signal) {
+					error(`Error: Disable connect '${slot}' to '${signal}', because '${signal}' already attached to '${slot}'.`)
+					return false
+				}
+			}
+		}
+
+		let func
+		if (typeof slot === 'function')
+			func = slot
+		else
+			func = function(...values) { this[slot](...values) }
+		this.on(signal, func)
+		this._signals.push({signal, slot, func})
+
+		return true
+	}
+
+	toString() {
+		return this.constructor.name + ' {}'
 	}
 
 	addChild(el) {
@@ -124,6 +174,7 @@ class DSObject extends EventEmitter {
 
 	get id() { return this._id }
 	set id(id) {
+		if (this._id) return error('Error: id is already set for this object')
 		this._id = id;
 		if (typeof window !== 'undefined')
 			window[id] = this
@@ -201,36 +252,105 @@ class Item extends DSObject {
 			log('___________________________________Item', value, old)
 			//this.her = 1111
 		})
-		log('some logs')
+		// log('some logs')
+	}
+
+	sendToPisun(person, notice) {
+		log('Sending to pisun: ' + person + ', ' + notice)
 	}
 }
 
 // return
 const item = new Item()
 item.id = 'test'
+item.prop('p', 'int')
+test.p = 12
+item.onChange('p', function(value, old) { console.log('p', value, old) })
+
+test.signal('messageReceived')
+test.signal('sendToPost', function(person, notice) {
+	console.log("Sending to post: " + person + ", " + notice)
+})
+test.signal('sendToTelegraph', function(person, notice) {
+	console.log("Sending to telegraph: " + person + ", " + notice)
+})
+test.signal('sendToEmail', function(person, notice) {
+	console.log("Sending to email: " + person + ", " + notice)
+})
+test.messageReceived.connect(test.sendToPost)
+test.messageReceived.connect(test.sendToTelegraph)
+test.messageReceived.connect(test.sendToEmail)
+test.messageReceived.connect(test.sendToPisun)
+// test.messageReceived.connect(test.pChange())
+// test.messageReceived.connect(function(name, message) { log(`Пашёл нахуй, ${name}, со своим ${message}!`)} )
+test.pChange.connect(test.messageReceived)
+
+test.p = 15
+
+Timer.singleShot(1000000, function() {})
+
+// test.messageReceived('Tom', 'Happy Birthday')
+
+// test.pChange.connect(test.messageReceived)
+
+// test.pChange()
+// test.p = 10
+
+// log(another)
+// log(test)
+
 //item.herChange()
-log(test.her)
+// log(test.her)
 
 // item.read(1, 2, 3)
 // console.log(item.onBarChange.toString())
 
-test.her = 500
+// test.her = 500
 // log(item)
-test.prop('s', 'int')
-test.prop('s1', 'int')
-test.prop('s2', 'int')
-test.bind('s', function() { return this.s1 + this.s2 }, [test, 's1', test, 's2'] )
-test.onChange('s', (value) => console.log(value))
+// test.prop('s', 'int')
+// test.prop('s1', 'int')
+// test.prop('s2', 'int')
+// test.bind('s', function() { return this.s1 + this.s2 }, [test, 's1', test, 's2'] )
+// test.onChange('s', (value) => console.log('s =', value))
 // test.onChange('s2', () => this.s = this.s1 + this.s2)
-test._s1 = 2
-test.s2 = 3
+// test._s1 = 2
+// test.s2 = 3
 
-test.signal('rock', function(q, w, e, aa, bb, cc, dd) { console.log(`i'm rock man`, e, w, q, aa, bb, cc, dd)})
-test.rock(1, 2, 3, 5, 6, 7, 3, 2, 1)
-// log(item.kek)
+// test.signal('rock', function(va, ol, e, aa, bb, cc, dd) { console.log(`i'm rock man`, va, ol, e, aa, bb, cc, dd)})
+// test.rock(1, 2, 3, 5, 6, 7, 3, 2, 1)
+
+// test.signal('kik', function(value) { log('kik', value, this.toString()) })
+// test.connect('kik', 'rock')
+// test.connect('sChange', 'kik')
+// test.connect('kik', 'kik')
+// test.kik(1, 2, 3, 4, 5, 6, 7, 8)
+// test.sChange.connect(test.rock)
+// test.rock.connect(test.kik)
+
+// test.kik(1, 2)
+// test.s = 1112
+
 //Timer.singleShot(10000, function(){})
-// item._reg = /\s+/g
 
-let q = function(value) {
-	return !!value
-}
+// class kek {
+// 	constructor() {
+// 		Object.defineProperty(this, 'piska', {
+// 			// value: function(...values) { print(...values) },
+// 			get: function() { return function(){} }
+// 			//writable: false
+// 		});
+// 		// log(this.piska())
+// 	}
+// }
+
+// function kek() {
+	// kek.connect = function() { log('connect') }
+	// log('emit')
+// } 
+// let kek = function() { console.log('emit')}
+// kek.connect = function() { console.log('connect')}
+// kek()
+
+// var kik = new kek()
+// kik.piska(1)
+// print(kik.piska)
