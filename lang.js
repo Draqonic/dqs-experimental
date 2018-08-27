@@ -1,4 +1,4 @@
-// TODO: dubl vars, props
+﻿// TODO: dubl vars, props
 // global braces count (indexOf)
 // disable names for vars: https://mathiasbynens.be/notes/reserved-keywords
 // info for component: class name, file
@@ -7,36 +7,36 @@
 
 'use strict';
 const log = console.log
-const warn = console.warning
+const warn = console.warn
 const err = console.error
 const deb = console.debug
 
 const warnEnabled = false
 //const keyWords = ['property', 'function', '{', '}']
-const varTypes = ['int', 'number', 'string', 'bool', 'any', 'enum', 'lazy', 'const', 'RegExp', 'BigInt']
+const varTypes = ['int', 'number', 'string', 'bool', 'any', 'enum'] // TODO: const, BigInt, lazy
 //TODO: all with big char, string, примитив
-const varDisableNames = ['do', 'if', 'in', 'for', 'let', 'new', 'try', 'var', 'case', 'else', 'enum', 'eval', 'null', 'this', 'true', 'void',
+const varDisableNames= ['id', 'do', 'if', 'in', 'for', 'let', 'new', 'try', 'var', 'case', 'else', 'enum', 'eval', 'null', 'this', 'true', 'void',
 							'with', 'await', 'break', 'catch', 'class', 'const', 'false', 'super', 'throw', 'while', 'yield', 'delete', 'export',
 							'import', 'public', 'return', 'static', 'switch', 'typeof', 'default', 'extends', 'finally', 'package', 'private',
 							'continue', 'debugger', 'function', 'arguments', 'interface', 'protected', 'implements', 'instanceof', 'undefined ',
-							'null', 'boolean', 'string']
+							'null', 'boolean', 'string', 'RegExp', 'prop']
 const errorText = {
-0: 'Total error',
-1: 'Сomponent name must begin with a large english letter',
-2: 'Component name can contains only A-Z, a-z, 0-9',
-3: 'No opening {',
-4: 'No close }', 
-5: 'Missing /',
-6: 'Property name must stated from lower case symbol', // TODO
-7: 'Property duplicate', // TODO
-8: 'You cant use JS keywords and DS type for var names', // TODO
-9: 'Error */', // TODO
-10: 'No close } for {',
-11: 'Unknown property type'
+	0: 'Total error',
+	1: 'Сomponent name must begin with a large english letter',
+	2: 'Component name can contains only A-Z, a-z, 0-9',
+	3: 'No opening {',
+	4: 'No close }', 
+	5: 'Missing /',
+	6: 'Property name must stated from lower case symbol', // TODO
+	7: 'Property duplicate', // TODO
+	8: 'You cant use JS keywords and DS type for var names', // TODO
+	9: 'Error */', // TODO
+	10: 'No close } for {',
+	11: 'Unknown property type'
 }
 const warnText = {
-0: '[CodeStyle] Extra semicolon', // TODO
-1: '[CodeStyle] Open brace on a new line'
+	0: '[CodeStyle] Extra semicolon', // TODO
+	1: '[CodeStyle] Open brace on a new line'
 }
 
 class DSParser {
@@ -91,6 +91,7 @@ class DSParser {
 
 	firstStep() {
 		let all = this.all, strs = this.strs
+		let funcPrevI
 
 		let func = ''
 		let b = {count: 0, mode: false, i: -1}
@@ -135,8 +136,11 @@ class DSParser {
 						b.start = true
 					}
 					if (ch === '}') b.count--
-					if (ch !== '\r')
-					func += ch
+					if (ch !== '\r') {
+						if (funcPrevI !== i) func += '\n'
+						func += ch
+						funcPrevI = i
+					}
 
 					if ((b.count === 0 && b.start) || !b.mode) {
 						let newFunc = func.trim(); func = ''
@@ -180,6 +184,7 @@ class DSParser {
 
 	work() { // function, prop, Class, on
 		let strs = this.strs
+		let id
 
 		this.checkComponentName(strs[0].s)
 		this.checkFirstLastBraces()
@@ -194,9 +199,8 @@ class DSParser {
 		let chProps = [] // done
 		for(let i = 0; i !== strs.length; ++i) {
 			let pprev = strs[i - 2], prev = strs[i - 1], str = strs[i], next = strs[i + 1], nnext = strs[i + 2], nnnext = strs[i + 3]
-
 			if (str.s === ':') {
-				if (pprev.s === 'prop') { // if new prop with value
+				if (pprev && pprev.s === 'prop') { // if new prop with value
 					this.checkVar(next, prev)
 					let value
 					if (nnext) {
@@ -209,12 +213,14 @@ class DSParser {
 						}
 					}
 					if (varTypes.indexOf(prev.s) === -1) this.logError(11, prev.l, prev.c - 1, prev.s.length)
+					if (newProps.map(function(n) { return n.s; }).indexOf(nnext.s) !== -1) logError(8) // TODO
 					newProps.push({name: next.s, type: prev.s, value})
 				}
 			}
 
 			if (str.s === 'prop' && nnext.s !== ':') {
 				this.checkVar(nnext, next)
+				if (newProps.indexOf(nnext.s) !== -1) logError(8)
 				newProps.push({name: nnext.s, type: next.s, value: ''})
 			}
 
@@ -224,10 +230,75 @@ class DSParser {
 				} else if (next.s[next.s.length - 1] === ')') {
 					//log('this is function')
 				} else { // change parent properties // TODO: check '.'
-					chProps.push({name: next.s, value: nnext.s})
+					if (next.s === 'id') {
+						if (id) this.logError(7, next.l, next.c - 2, 2)
+						id = nnext.s
+					} else
+						chProps.push({name: next.s, value: nnext.s})
 				}
 			}
 		}
+		//TODO: parse tr(name, comment)
+
+		this.fileName = 'Item' // TODO
+		if (this.componentName === 'Object') this.componentName = 'DSObject'
+		// log(newProps)
+		// log(chProps)
+		log(slots)
+		let sp = ' '.repeat(4)
+		let Class = `class ${this.fileName} extends ${this.componentName} {\n${sp}constructor() {\n${sp}${sp}super()\n`
+
+		if (newProps.length > 0) {
+			Class += `${sp}${sp}this.addProperties([`
+
+			for(const kek of newProps) {
+				if (kek.type !== 'lazy' && kek.type !== 'enum') { // TODO
+					Class += `['${kek.name}', '${kek.type}'`
+					// Class += `\n${sp}${sp}addProperty('${kek.name}', '${kek.type}'`
+
+					Class += '], '
+				}
+			}
+			Class += '])'
+		}
+
+
+		for(const kek of newProps) {
+			if (kek.type !== 'lazy' && kek.type !== 'enum') { // TODO
+				if (kek.value) {
+					if (kek.value[0] === '{' && kek.value[kek.value.length - 1] === '}') // TODO
+						kek.value = kek.value.substr(1, kek.value.length - 2)
+					Class += `${sp}${sp}this._${kek.name} = ${kek.value.replace(/\s+/g, ' ').trim()}\n`
+				}
+			}
+		}
+
+		for(const kek of slots) {
+			Class += `${sp}${sp}this.${kek.name} = function(value, old) ${kek.value}\n`
+		}
+
+		for(const kek of chProps) {
+			Class += `${sp}${sp}this.${kek.name} = ${kek.value}\n`
+		}
+
+
+		Class += '\n    }'
+		Class += '\n}\n\n'
+
+		Class += `const ${id} = new ${this.fileName}()\n`
+
+		//for(const kek of slots) {
+		//	Class += `${id}.${kek.name} = function(value, old) ${kek.value}\n`
+		//}
+
+
+
+
+		
+
+		log(Class)
+		let bar = 'sss'
+		
 	}
 
 	checkComponentName(str) {
@@ -256,7 +327,7 @@ class DSParser {
 			this.logError(11, type.l, type.c - 1, type.s.length)
 		if (varTypes.indexOf(name.s) !== -1 ||
 			varDisableNames.indexOf(name.s) !== -1)
-				this.logError(8, name.l, name.c - 2)
+				this.logError(8, name.l, name.c - 2, name.s.length)
 	}
 }
 
@@ -267,19 +338,23 @@ class DranoqScript {
 		//log('---------------------\n');
 	}
 
-	load(fileOrStr, isStr = false) {
-		if (isStr) {
-			new DSParser(fileOrStr);
-		} else {
-			const fs = require('fs');
-			fs.readFile(fileOrStr, 'utf8', (error, text) =>
-				new DSParser(text, fileOrStr)
-			);
+	load(mainFile) {
+		const fs = require('fs');
+		if (!fs.existsSync(mainFile)) {
+			err(`Error load file ${mainFile}`);
+			return;
 		}
- 
+
+		fs.readFile(mainFile, 'utf8', (error, text) => {
+			if (error) err('Error?')
+			new DSParser(text, mainFile)
+		});
 		return true;
 	}
 }
 
 const script = new DranoqScript
 script.load('app/app.dqs')
+// setTimeout(() => console.log('end'), 10000000)
+// script.start()
+// script.exec()
