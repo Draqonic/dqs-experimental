@@ -193,10 +193,14 @@ class DSParser {
 		strs.splice(strs.length - 1, 1)
 
 		let funcs = [] // TODO
-		let childs = []
+		let childs = [] // TODO
 		let slots = [] // done
 		let newProps = [] // done
 		let chProps = [] // done
+		let onCreate = ''
+		let onComplete = ''
+		let signals = [] // TODO: parse signal
+
 		for(let i = 0; i !== strs.length; ++i) {
 			let pprev = strs[i - 2], prev = strs[i - 1], str = strs[i], next = strs[i + 1], nnext = strs[i + 2], nnnext = strs[i + 3]
 			if (str.s === ':') {
@@ -224,9 +228,18 @@ class DSParser {
 				newProps.push({name: nnext.s, type: next.s, value: ''})
 			}
 
-			if (pprev && pprev.s !== 'prop' && str.s === ':') {
+			if ((!pprev || (pprev && pprev.s !== 'prop')) && str.s === ':') {
 				if (next.s.substr(0, 2) === 'on') {
-					slots.push({name: next.s, value: nnext.s})
+					if (next.s.substr(next.s.length - 6, next.s.length - 1) === 'Change')
+						slots.push({name: next.s, value: nnext.s}) // TODO: check if prop exist
+					else if (next.s === 'onCreate')
+							onCreate = nnext.s
+						else if (next.s === 'onComplete')
+							onComplete = nnext.s
+					else {
+						signals.push({name: next.s, value: nnext.s})
+						// TODO: signal
+					}
 				} else if (next.s[next.s.length - 1] === ')') {
 					//log('this is function')
 				} else { // change parent properties // TODO: check '.'
@@ -242,9 +255,10 @@ class DSParser {
 
 		this.fileName = 'Item' // TODO
 		if (this.componentName === 'Object') this.componentName = 'DSObject'
+		log(signals)
 		// log(newProps)
 		// log(chProps)
-		log(slots)
+		log(slots, onCreate, onComplete)
 		let sp = ' '.repeat(4)
 		let Class = `class ${this.fileName} extends ${this.componentName} {\n${sp}constructor() {\n${sp}${sp}super()\n`
 
@@ -273,19 +287,18 @@ class DSParser {
 			}
 		}
 
-		for(const kek of slots) {
-			Class += `${sp}${sp}this.${kek.name} = function(value, old) ${kek.value}\n`
-		}
-
 		for(const kek of chProps) {
-			Class += `${sp}${sp}this.${kek.name} = ${kek.value}\n`
+			Class += `${sp}${sp}this._${kek.name} = ${kek.value}\n`
 		}
 
+		for(const kek of slots) {
+			Class += `${sp}${sp}this.onChange('${kek.name}', function(value, old) ${kek.value})\n`
+		}
 
 		Class += '\n    }'
 		Class += '\n}\n\n'
 
-		Class += `const ${id} = new ${this.fileName}()\n`
+		Class += `const ${id} = new ${this.fileName}()\n` // TODO: replace id to random, set id by property
 
 		//for(const kek of slots) {
 		//	Class += `${id}.${kek.name} = function(value, old) ${kek.value}\n`
@@ -296,7 +309,7 @@ class DSParser {
 
 		
 
-		log(Class)
+		// log(Class)
 		let bar = 'sss'
 		
 	}

@@ -20,7 +20,7 @@
 
 her: 100
 
-		   onCreate:   { log('some logs') }
+		   onCreate:   { log('Create!') }
   onBarChange: 
   {   
     if (value === 15) console.log ( function(value) { return value } (value))
@@ -35,6 +35,14 @@ prop string privet: 'hihihi'
  prop any sss: Object {
     prop int hello: 10
  }
+    onComplete: {
+      log('Complete!')
+    }
+
+
+  signal mem(lol, kek)
+
+  onMem: { log('mem', lol, kek) }
 
  prop enum bar: {{One, Two, Three}: Two}
 	

@@ -74,20 +74,13 @@ class DSObject extends EventEmitter {
 
 				let oldValue = this[privProp]
 
-				switch(types[privProp]) { // ['int', 'number', 'string', 'bool', 'any', 'enum', 'lazy', 'const', 'BigInt']
+				switch(types[privProp]) {
 					case 'int': value = parseInt(value); break;
 					case 'number': value = parseFloat(value); break;
 					case 'string': value = String(value); break;
 					case 'bool': value = !!value; break;
 				}
-				this[privProp] = value; // TODO: convert
-				//console.log(prop, types[privProp])
-
-
-				// if (this[change])
-				// 	this[change](value);
-
-				//log(prop, 'change')
+				this[privProp] = value;
 				this.emit(change, value, oldValue);
 			}
 		});
@@ -109,8 +102,6 @@ class DSObject extends EventEmitter {
 		this[privProp] = val
 		if (type !== 'any')
 			types[prop] = type
-
-		//this.addListener(change, function(stream) { console.log('ON1!', stream) })
 	}
 
 	onChange(prop, func) {
@@ -119,7 +110,7 @@ class DSObject extends EventEmitter {
 
 	signal(name, func) {
 		Object.defineProperty(this, name, {
-			value: function(...values) { this.emit('name', values) },
+			value: function(...values) { this.emit(name, ...values) },
 			writable: false
 		});
 		this.on(name, func)
@@ -131,14 +122,6 @@ class DSObject extends EventEmitter {
 		el.parent = this
 	}
 
-	//fooChange(value) {
-	//	console.log('Foo changed 1:', value)
-	//	this.bar = 'lol'
-	//}
-	
-	//fooSet(value) {
-	//	log('Foo set', value)
-	//}
 	get id() { return this._id }
 	set id(id) {
 		this._id = id;
@@ -148,34 +131,9 @@ class DSObject extends EventEmitter {
 			global[id] = this
 	}
 
-	//get foo() {
-	//	if (fooGet)
-	//		return fooGet()
-	//	return this._foo
-	//}
-	//set foo(value) {
-	//	if (this.fooSet) this.fooSet(value)
-	//	if (this.fooChange) this.fooChange(value)
-	//	this._foo = value
-	//}
-
-	//barChange(value) {
-	//	log('Bar changed 1:', value)
-	//}
-
-	//get bar() {
-	//	if (barGet)
-	//		return barGet()
-	//	return this._bar
-	//}
-	//set bar(value) {
-	//	if (this.barChange) this.barChange(value)
-	//	this._bar = value
-	//}
-
 	bind(prop, upd, arr) {
 		for(let i = 0; i !== arr.length; i += 2) {
-			let eventName = arr[i + 1] + 'Changed'
+			let eventName = arr[i + 1] + 'Change'
 			let updater = function() { this[prop] = upd.bind(this)() }
 			arr[i].on(eventName, updater)
 			this._binds.push({prop, updater, eventName})
@@ -189,74 +147,15 @@ class DSObject extends EventEmitter {
 		}
 	}
 }
-//=========================================================
+
+
+		//if (DSObject.prototype.addProperies)
+			//DSObject.prototype.addProperies.call(this)
+
+
+//obj.bind('q', function() { return this.q1 + this.q2 }, [obj, 'q1', obj, 'q2'])
 
 /*
-class Item extends DSObject {
-	constructor() {
-		super()
-	}
-
-	addProperies() {
-		if (DSObject.prototype.addProperies)
-			DSObject.prototype.addProperies.call(this)
-
-		this.addProperty('bar')
-		this.addProperty('q1', 5)
-		this.addProperty('q2', 10)
-		this.addProperty('q')
-	}
-
-	//fooChange(value) {
-	//	if (DSObject.prototype.fooChange) DSObject.prototype.fooChange.call(this, value) super.fooChange
-	//	log('Foo changed 2:', value)
-	//}
-	
-	//barChange(value) {
-	//	if (DSObject.prototype.barChange) DSObject.prototype.barChange.call(this, value)
-	//	log('Bar changed 2:', value)
-	//	this.signal()
-	//}
-}
-
-class Widget extends Item {
-	addProperies() {
-		console.log(Object.getPrototypeOf(this.constructor).name)
-		if (Item.prototype.addProperies)
-			Item.prototype.addProperies.call(this)
-	}
-}
-
-var obj = new Widget
-obj.id = 'hello'
-//obj.foo = 3
-//let obj2 = new Item
-//obj2.parent = obj
-//obj2.parent.foo = 4
-
-obj.qChange = function(value) { console.log('q =', value) }
-obj.q1Change = function(value) { console.log('q1 =', value) }
-obj.q2Change = function(value) { console.log('q2 =', value) }
-
-//obj.q1 = 5
-//obj.q2 = 10
-//obj.qUpdate = function() { return this.q1 + this.q2 }
-
-obj.bind('q', function() { return this.q1 + this.q2 }, [obj, 'q1', obj, 'q2'])
-
-obj.q = obj.q1 + obj.q2
-
-obj.q1 = 10
-obj.q2 = 15
-
-obj.unbind('q')
-obj.bind('q', function() { return this.q1 * 50 }, [obj, 'q1'])
-
-obj.q1 = 1
-obj.q2 = 2
-
-
-
 class SomeButton extends DSObject {
 	constructor() {
 		super()
@@ -288,13 +187,13 @@ class Item extends DSObject {
     constructor() {
 		super()
 
-        this.props([['reg', 'any'], ['privet', 'string'], ['iint', 'int'], ['foo', 'int'], ['sss', 'any'], ['bar', 'int'], ['baz', 'number'], ['bak', 'any'], ['kek', 'any'], ])
+        this.props([['her', 'int'], ['reg', 'any'], ['privet', 'string'], ['iint', 'int'], ['foo', 'int'], ['sss', 'any'], ['bar', 'int'], ['baz', 'number'], ['bak', 'any'], ['kek', 'any'], ])
 
 		this._reg = /\s+/g
 		this._privet = 'hihihi'
 		this._foo = 6
 		this._bar = 5 * 10+this.foo
-		this._baz = foo
+		this._baz = this.foo
 		this._bak = [ 34, 323,{hi: 555, buy: 10},342]
 		this._kek = 'KEK' + this.bar
 		this._her = 100
@@ -306,23 +205,27 @@ class Item extends DSObject {
 	}
 }
 
-return
+// return
 const item = new Item()
 item.id = 'test'
 //item.herChange()
-console.log(test.her)
+log(test.her)
 
 // item.read(1, 2, 3)
 // console.log(item.onBarChange.toString())
 
 test.her = 500
 // log(item)
-test.prop('привет', 'string')
-test.привет = "как дела?"
-test.onChange('привет', (value) => console.log('kek', value))
-test.привет = item.her
+test.prop('s', 'int')
+test.prop('s1', 'int')
+test.prop('s2', 'int')
+test.bind('s', function() { return this.s1 + this.s2 }, [test, 's1', test, 's2'] )
+test.onChange('s', (value) => console.log(value))
+// test.onChange('s2', () => this.s = this.s1 + this.s2)
+test._s1 = 2
+test.s2 = 3
 
-test.signal('rock', function(q, w, e, aa, bb, cc, dd) { console.log('i\'m rock man', e, w, q, aa, bb, cc, dd)})
+test.signal('rock', function(q, w, e, aa, bb, cc, dd) { console.log(`i'm rock man`, e, w, q, aa, bb, cc, dd)})
 test.rock(1, 2, 3, 5, 6, 7, 3, 2, 1)
 // log(item.kek)
 //Timer.singleShot(10000, function(){})
