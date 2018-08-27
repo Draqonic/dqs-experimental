@@ -2,6 +2,7 @@
 
 'use strict';
 const log = console.log
+const print = log
 const error = console.error
 const debug = console.debug
 const dg = console.debug
@@ -36,25 +37,14 @@ class Timer {
 	}
 }
 
-class DSObject {
+class DSObject extends EventEmitter {
 	constructor() {
-		// super()
+		super()
 		this.parent = null
 		this._binds = []
 		this.child = []
-		this.properties = new EventEmitter()
-		this.properties.types = {}
-		//TODO this.beforeCreate() onCreate
-		//this.addProperties()
-		this.prop('her')
-		this.properties.her = 1000
-
-		// this.herChangedObject = function(value, old) {
-		// 	log('___________________________________Object', value, old)
-		// }
-		this.onChange('her', function(value, old) {
-			log('___________________________________Object', value, old)
-		})
+		this.types = {}
+		//TODO onCreate
 
 		//TODO onComplete
 	}
@@ -67,47 +57,48 @@ class DSObject {
 	}
 
 	prop(prop, type) {
-		dg('New property:', prop);
+		//dg('New property:', prop);
 		if (!type) type = 'any'
-		const change = prop + 'Change';
-		const propName = prop
-		const props = this.properties
-		const types = this.properties.types
+		
+		const types = this.types
+		const privProp = '_' + prop
+		const change = prop + 'Change'
+
 		Object.defineProperty(this, prop, {
 			get: function() {
-				return props[prop];
+				return this[privProp];
 			},
 			set: function(value) {
-				if (props[prop] === value)
+				if (this[privProp] === value)
 					return
 
-				let oldValue = props[prop]
-				props[prop] = value; // TODO: convert
-				console.log(prop, types[prop])
-				switch(types[prop]) { // ['int', 'number', 'string', 'bool', 'any', 'enum', 'lazy', 'const', 'BigInt']
-					case 'int': val = parseInt(value); break;
-					case 'number': val = parseFloat(+value); break;
-					case 'string': val = String(value); break;
-					case 'bool': val = !!value; break;
-					//case 'BigInt': val = 0n; break; // only for Node.js
-					case 'any': val = undefined; break;
-				}	
+				let oldValue = this[privProp]
 
-				// if (props[change])
-				// 	props[change](value);
+				switch(types[privProp]) { // ['int', 'number', 'string', 'bool', 'any', 'enum', 'lazy', 'const', 'BigInt']
+					case 'int': value = parseInt(value); break;
+					case 'number': value = parseFloat(value); break;
+					case 'string': value = String(value); break;
+					case 'bool': value = !!value; break;
+				}
+				this[privProp] = value; // TODO: convert
+				//console.log(prop, types[privProp])
+
+
+				// if (this[change])
+				// 	this[change](value);
 
 				//log(prop, 'change')
-				this.properties.emit(change, value, oldValue);
+				this.emit(change, value, oldValue);
 			}
 		});
 
 		Object.defineProperty(this, change, {
-			value: function() { this.properties.emit(change, props[prop], props[prop]) },
+			value: function() { this.emit(change, this[privProp], this[privProp]) },
 			writable: false
 		});
 
 		let val
-		switch(type) { // ['int', 'number', 'string', 'bool', 'any', 'enum', 'lazy', 'const', 'BigInt']
+		switch(type) {
 			case 'int': val = 0; break;
 			case 'number': val = 0.0; break;
 			case 'string': val = ''; break;
@@ -115,23 +106,23 @@ class DSObject {
 			//case 'BigInt': val = 0n; break; // only for Node.js
 			case 'any': val = undefined; break;
 		}
-		props[prop] = val
-		types[prop] = type
+		this[privProp] = val
+		if (type !== 'any')
+			types[prop] = type
 
 		//this.addListener(change, function(stream) { console.log('ON1!', stream) })
 	}
 
 	onChange(prop, func) {
-		// if (func не функция)
-		this.properties.on(prop + 'Change', func)
+		this.on(`${prop}Change`, func)
 	}
 
 	signal(name, func) {
 		Object.defineProperty(this, name, {
-			value: func,
+			value: function(...values) { this.emit('name', values) },
 			writable: false
 		});
-		this.properties.on(name, func)
+		this.on(name, func)
 	}
 
 	addChild(el) {
@@ -149,7 +140,13 @@ class DSObject {
 	//	log('Foo set', value)
 	//}
 	get id() { return this._id }
-	set id(id) { this._id = id; global.id = id }
+	set id(id) {
+		this._id = id;
+		if (typeof window !== 'undefined')
+			window[id] = this
+		else if (typeof global !== 'undefined')
+			global[id] = this
+	}
 
 	//get foo() {
 	//	if (fooGet)
@@ -180,7 +177,7 @@ class DSObject {
 		for(let i = 0; i !== arr.length; i += 2) {
 			let eventName = arr[i + 1] + 'Changed'
 			let updater = function() { this[prop] = upd.bind(this)() }
-			arr[i].properties.on(eventName, updater)
+			arr[i].on(eventName, updater)
 			this._binds.push({prop, updater, eventName})
 		}
 	}
@@ -188,7 +185,7 @@ class DSObject {
 	unbind(prop) {
 		for(let i = 0; i !== this._binds.length; ++i) {
 			if (this._binds[i]['prop'] === prop)
-				this.properties.removeListener(this._binds[i]['eventName'], this._binds[i]['updater'])
+				this.removeListener(this._binds[i]['eventName'], this._binds[i]['updater'])
 		}
 	}
 }
@@ -258,48 +255,75 @@ obj.bind('q', function() { return this.q1 * 50 }, [obj, 'q1'])
 obj.q1 = 1
 obj.q2 = 2
 
+
+
+class SomeButton extends DSObject {
+	constructor() {
+		super()
+
+		this.prop('text', 'string')
+		this._text = 'Text 1'
+		this.onChange('text', (text) => console.log(1, text))
+	}
+}
+
+class SomeLabel extends SomeButton {
+	constructor() {
+		super()
+
+		this.text = 'Text 2'
+		this.onChange('text', (text) => text = 5)
+	}
+}
+
+let $$$mainObject = new DSObject
+let $$$dfdfsgdsk4334 = new SomeLabel
+$$$dfdfsgdsk4334.parent = $$$mainObject
+$$$dfdfsgdsk4334.id = 'sb'
+sb.text = "Text 3"
+log(sb)
 */
-let foo = 111, bar = 'sss'
 
 class Item extends DSObject {
     constructor() {
 		super()
-		
+
         this.props([['reg', 'any'], ['privet', 'string'], ['iint', 'int'], ['foo', 'int'], ['sss', 'any'], ['bar', 'int'], ['baz', 'number'], ['bak', 'any'], ['kek', 'any'], ])
-		
-		let props = this.properties
-		props.reg = /\s+/g
-		props.privet = 'hihihi'
-		props.foo = 6
-		props.bar = 5 * 10+this.foo
-		props.baz = foo
-		props.bak = [ 34, 323,{hi: 555, buy: 10},342]
-		props.kek = 'KEK' + this.bar
-		props.her = 100
-		this.properties.on('_herChange', function(value, old) {
+
+		this._reg = /\s+/g
+		this._privet = 'hihihi'
+		this._foo = 6
+		this._bar = 5 * 10+this.foo
+		this._baz = foo
+		this._bak = [ 34, 323,{hi: 555, buy: 10},342]
+		this._kek = 'KEK' + this.bar
+		this._her = 100
+		this.onChange('her', function(value, old) {
 			log('___________________________________Item', value, old)
-			this.her = 1111
+			//this.her = 1111
 		})
 		log('some logs')
 	}
 }
 
+return
 const item = new Item()
-item.herChange()
-console.log(item.her)
+item.id = 'test'
+//item.herChange()
+console.log(test.her)
 
 // item.read(1, 2, 3)
 // console.log(item.onBarChange.toString())
 
-item.her = 500
-log(item)
-item.prop('привет', 'string')
-item.привет = "как дела?"
-item.onChange('привет', (value) => console.log('kek', value))
-item.привет = item.her
+test.her = 500
+// log(item)
+test.prop('привет', 'string')
+test.привет = "как дела?"
+test.onChange('привет', (value) => console.log('kek', value))
+test.привет = item.her
 
-item.signal('rock', function(q, w, e, aa, bb, cc, dd) { console.log('i\'m rock man', e, w, q, aa, bb, cc, dd)})
-item.rock(1, 2, 3, 5, 6, 7, 3, 2, 1)
+test.signal('rock', function(q, w, e, aa, bb, cc, dd) { console.log('i\'m rock man', e, w, q, aa, bb, cc, dd)})
+test.rock(1, 2, 3, 5, 6, 7, 3, 2, 1)
 // log(item.kek)
 //Timer.singleShot(10000, function(){})
 // item._reg = /\s+/g
@@ -307,17 +331,3 @@ item.rock(1, 2, 3, 5, 6, 7, 3, 2, 1)
 let q = function(value) {
 	return !!value
 }
-console.time(1)
-console.log(q(false))
-console.timeEnd(1)
-
-console.time(1)
-console.log(q(144.3))
-console.timeEnd(1)
-
-console.time(1)
-console.log(q('5привет'))
-console.timeEnd(1)
-
-item.privet = 1123
-console.log(item.privet)

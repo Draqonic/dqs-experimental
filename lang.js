@@ -15,11 +15,11 @@ const warnEnabled = false
 //const keyWords = ['property', 'function', '{', '}']
 const varTypes = ['int', 'number', 'string', 'bool', 'any', 'enum'] // TODO: const, BigInt, lazy
 //TODO: all with big char, string, примитив
-const varDisableNames= ['id', 'do', 'if', 'in', 'for', 'let', 'new', 'try', 'var', 'case', 'else', 'enum', 'eval', 'null', 'this', 'true', 'void',
+const varDisableNames= ['do', 'if', 'in', 'for', 'let', 'new', 'try', 'var', 'case', 'else', 'enum', 'eval', 'null', 'this', 'true', 'void',
 							'with', 'await', 'break', 'catch', 'class', 'const', 'false', 'super', 'throw', 'while', 'yield', 'delete', 'export',
 							'import', 'public', 'return', 'static', 'switch', 'typeof', 'default', 'extends', 'finally', 'package', 'private',
 							'continue', 'debugger', 'function', 'arguments', 'interface', 'protected', 'implements', 'instanceof', 'undefined ',
-							'null', 'boolean', 'string', 'RegExp', 'prop']
+							'null', 'boolean', 'string', 'RegExp', 'prop'] // TODO: disable prop any id
 const errorText = {
 	0: 'Total error',
 	1: 'Сomponent name must begin with a large english letter',
