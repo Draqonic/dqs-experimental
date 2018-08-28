@@ -3,9 +3,10 @@
 'use strict';
 
 const log = console.log
-const print = log
+const warn = console.warn
 const error = console.error
 const debug = console.debug
+const print = log
 const DS = require('./DS')
 const EventEmitter = require('./Event')
 const tr = (text) => { return DS.tr(text) }
@@ -21,74 +22,75 @@ class DSObject extends EventEmitter {
 	constructor() {
 		super()
 		this.parent = null
-		this._binds = []
-		this._signals = []
+		this.binds = []
+		this.signals = []
 		this.child = []
-		this.types = {}
+		this.properties = {}
 	}
 
 	props(properties) {
 		for(const property of properties) {
-			this.prop(property[0], property[1])
+			this.prop(property[0], property[1], property[2])
 		}
 	}
 
-	prop(prop, type) {
+	prop(property, type, val) {
 		if (!type)
-			type = 'any'
-		log(`New property: ${prop} (${type})`)
-		
-		const types = this.types
-		const privProp = '_' + prop
-		const change = prop + 'Change'
+			type = 'any';
 
-		Object.defineProperty(this, prop, {
+		if(property in this.properties) {
+			error(`Error: Property '${property}' already exists`);
+			return;
+		}
+
+		this.properties[property] = { type: type, value: undefined }
+		let prop = this.properties[property];
+		const change = `${property}Change`;
+
+		Object.defineProperty(this, property, {
 			get: function() {
-				return this[privProp];
+				return prop.value;
 			},
 			set: function(value) {
-				if (this[privProp] === value)
-					return
-
-				let oldValue = this[privProp]
-
-				switch(types[prop]) {
+				switch(prop.type) {
 					case 'int': value = parseInt(value) ? parseInt(value) : 0; break;
 					case 'number': value = parseFloat(value) ? parseFloat(value) : 0.0; break;
 					case 'string': value = String(value); break;
 					case 'bool': value = !!value; break;
 				}
-				this[privProp] = value;
-				this.emit(change, value, oldValue);
+
+				if (prop.value === value)
+					return;
+
+				let oldValue = prop.value;
+				prop.value = value;
+				this.emit(change, prop.value, oldValue);
 			}
 		});
 
 		Object.defineProperty(this, change, {
-			value: function() { this.emit(change, this[privProp], this[privProp]) },
+			value: function() { this.emit(change, prop.value, prop.value) },
 			writable: false
 		});
 
-		this[change].Name = change
+		this[change].Name = change;
 		this[change].connect = function(slot) {
 			if (!slot) {
-				error(`Error: Undefined slot for signal '${change}'`)
-				return
+				error(`Error: Undefined slot for signal '${change}'`);
+				return;
 			}
-			this.connect(change, slot.Name ? slot.Name : slot)
+			this.connect(change, slot.Name ? slot.Name : slot);
 		}.bind(this)
 
-		let val
 		switch(type) {
-			case 'int': val = 0; break;
-			case 'number': val = 0.0; break;
-			case 'string': val = ''; break;
-			case 'bool': val = false; break;
-			//case 'BigInt': val = 0n; break; // only for Node.js
-			case 'any': val = undefined; break;
+			case 'int': val = parseInt(val) ? parseInt(val) : 0; break;
+			case 'number': val = parseFloat(val) ? parseFloat(val) : 0.0; break;
+			case 'string': val = String(val); break;
+			case 'bool': val = !!val; break;
 		}
-		this[privProp] = val
-		if (type !== 'any')
-			types[prop] = type
+		prop.value = val
+
+		//log(`New property: ${property} (${type})`, val ? `= ${val}` : '');
 	}
 
 	onChange(prop, func) {
@@ -121,7 +123,7 @@ class DSObject extends EventEmitter {
 				return false
 			}
 
-			for(const signals of this._signals) {
+			for(const signals of this.signals) {
 				if (signals.signal === slot && signals.slot === signal) {
 					error(`Error: Disable connect '${slot}' to '${signal}', because '${signal}' already attached to '${slot}'.`)
 					return false
@@ -135,7 +137,7 @@ class DSObject extends EventEmitter {
 		else
 			func = function(...values) { this[slot](...values) }
 		this.on(signal, func)
-		this._signals.push({signal, slot, func})
+		this.signals.push({signal, slot, func})
 
 		return true
 	}
@@ -150,10 +152,10 @@ class DSObject extends EventEmitter {
 		el.parent = this
 	}
 
-	get id() { return this._id }
+	get id() { return this.properties.id ? this.properties.id.value : undefined }
 	set id(id) {
-		if (this._id) return error('Error: id is already set for this object')
-		this._id = id;
+		if (this.properties.id) return error('Error: id is already set for this object')
+		this.properties.id = {type: 'id', value: id};
 		if (typeof window !== 'undefined')
 			window[id] = this
 		else if (typeof global !== 'undefined')
@@ -161,79 +163,77 @@ class DSObject extends EventEmitter {
 	}
 
 	bind(prop, upd, arr) {
+		let updater = function() { this[prop] = upd.bind(this)() }.bind(this)
+
 		for(let i = 0; i !== arr.length; i += 2) {
 			let eventName = arr[i + 1] + 'Change'
-			let updater = function() { this[prop] = upd.bind(this)() }
 			arr[i].on(eventName, updater)
-			this._binds.push({prop, updater, eventName})
+			this.binds.push({prop, updater, eventName})
 		}
+
+		updater()
 	}
 
 	unbind(prop) {
-		for(let i = 0; i !== this._binds.length; ++i) {
-			if (this._binds[i]['prop'] === prop)
-				this.removeListener(this._binds[i]['eventName'], this._binds[i]['updater'])
+		let binds = this.binds
+		for(let i = 0; i !== binds.length; ++i) {
+			if (binds[i]['prop'] === prop)
+				this.removeListener(binds[i]['eventName'], binds[i]['updater'])
 		}
 	}
 }
-		//if (DSObject.prototype.addProperies)
-			//DSObject.prototype.addProperies.call(this)
+//if (DSObject.prototype.addProperies)
+	//DSObject.prototype.addProperies.call(this)
 
 class Item extends DSObject {
     constructor() {
 		super()
 
-        this.props([['her', 'int'], ['reg', 'any'], ['privet', 'string'], ['iint', 'int'], ['foo', 'int'], ['sss', 'any'], ['bar', 'int'], ['baz', 'number'], ['bak', 'any'], ['kek', 'any'], ])
+        this.props([['her', 'int', 100], ['reg', 'any', /\s+/g], ['privet', 'string', 'hihihi'], ['iint', 'int', 111], ['foo', 'int', 6], ['sss', 'any'], ['bar', 'int'], ['baz', 'number'], ['bak', 'any', [ 34, 323,{hi: 555, buy: 10},342]], ['kek', 'any'], ])
+		this.bind('bar', function() { return 10 + this.foo }, [this, 'foo'])
+		this.bind('kek', function() { return 'KEK' + this.bar }, [this, 'foo'])
+		this.bind('baz', function() { return this.foo }, [this, 'foo'])
 
-		this._reg = /\s+/g
-		this._privet = 'hihihi'
-		this._foo = 6
-		this._bar = 5 * 10+this.foo
-		this._baz = this.foo
-		this._bak = [ 34, 323,{hi: 555, buy: 10},342]
-		this._kek = 'KEK' + this.bar
-		this._her = 100
-		this.onChange('her', function(value, old) {
-			log('___________________________________Item', value, old)
+		// this.updateBinds() обновление всех, исходя из зависимостей, detect bind loop
+
+		this.onChange('bar', function(value, old) {
+			log(`bar = ${value} (old: ${old})`)
 			//this.her = 1111
 		})
-		// log('some logs')
-	}
-
-	sendToPisun(person, notice) {
-		log('Sending to pisun: ' + person + ', ' + notice)
+		// onCompleted
 	}
 }
 
 // return
 const item = new Item()
-item.id = 'test'
-test.prop('p', 'string')
-test.p = 'OLD'
+item.id = 'obj'
+obj.foo = -15
+log(obj)
+// obj.p = '5OLD'
 
-test.onChange('p', function(value, old) { console.log('p', value, old) })
+// obj.onChange('p', function(value, old) { console.log('p', value, old) })
 
-test.signal('messageReceived')
+// obj.signal('messageReceived')
 
-test.sendToPost = function(person, notice) {
-	console.log("Sending to post: " + person + ", " + notice)
-}
-test.sendToTelegraph = function(person, notice) {
-	console.log("Sending to telegraph: " + person + ", " + notice)
-}
-test.sendToEmail = function(person, notice) {
-	console.log(tr("Sending to email: ") + person + ", " + notice)
-}
+// obj.sendToPost = function(person, notice) {
+// 	console.log("Sending to post: " + person + ", " + notice)
+// }
+// obj.sendToTelegraph = function(person, notice) {
+// 	console.log("Sending to telegraph: " + person + ", " + notice)
+// }
+// obj.sendToEmail = function(person, notice) {
+// 	console.log(tr("Sending to email: ") + person + ", " + notice)
+// }
 
-test.messageReceived.connect(test.sendToPost)
-test.messageReceived.connect(test.sendToTelegraph)
-test.messageReceived.connect(test.sendToEmail)
-test.messageReceived.connect(test.sendToPisun)
-test.messageReceived.connect((name, message) => { log(`Пашёл нах, ${name}, со своим ${message}!`)} )
-test.pChange.connect(test.messageReceived)
+// obj.messageReceived.connect(test.sendToPost)
+// obj.messageReceived.connect(test.sendToTelegraph)
+// obj.messageReceived.connect(test.sendToEmail)
+// obj.messageReceived.connect((name, message) => { log(`Пашёл нах, ${name}, со своим ${message}!`)} )
+// obj.pChange.connect(test.messageReceived)
 
-test.p = 'NEW'
+// test.p = '5NEW'
+// obj.p = '6NEW'
 
-test.messageReceived('Tom', 'Happy Birthday')
+// obj.messageReceived('Tom', 'Happy Birthday')
 
 //Timer.singleShot(10000, function(){})

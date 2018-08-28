@@ -1,7 +1,8 @@
 const log = console.log
-const print = log
+const warn = console.warn
 const error = console.error
 const debug = console.debug
+const print = log
 
 class DS {
 	static get locales() {
