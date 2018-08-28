@@ -1,35 +1,15 @@
 // TODO: id, on signal
 
 'use strict';
+
 const log = console.log
 const print = log
 const error = console.error
 const debug = console.debug
-const dg = console.debug
-
-/*
-Base {
-	property var foo // number, bool, string
-	property var bar
-	
-	onFooChange:
-	onBarChange:
-	onSignal:
-}
-
-Item {
-	onFooChange:
-	onBarChange:
-	
-	Item {
-		onFooChange: parent.
-	}
-}
-// const DranoqScript = require('DranoqScript')
-// const app = new DranoqScript('main.qml')
-// app.load()
-*/
+const DS = require('./DS')
 const EventEmitter = require('./Event')
+const tr = (text) => { return DS.tr(text) }
+const forceTr = (text, locale) => { return DS.forceTr(text, locale) }
 
 class Timer {
 	static singleShot(interval, func) {
@@ -45,11 +25,7 @@ class DSObject extends EventEmitter {
 		this._signals = []
 		this.child = []
 		this.types = {}
-		//TODO onCreate
-
-		//TODO onComplete
 	}
-
 
 	props(properties) {
 		for(const property of properties) {
@@ -58,8 +34,9 @@ class DSObject extends EventEmitter {
 	}
 
 	prop(prop, type) {
-		//dg('New property:', prop);
-		if (!type) type = 'any'
+		if (!type)
+			type = 'any'
+		log(`New property: ${prop} (${type})`)
 		
 		const types = this.types
 		const privProp = '_' + prop
@@ -75,9 +52,9 @@ class DSObject extends EventEmitter {
 
 				let oldValue = this[privProp]
 
-				switch(types[privProp]) {
-					case 'int': value = parseInt(value); break;
-					case 'number': value = parseFloat(value); break;
+				switch(types[prop]) {
+					case 'int': value = parseInt(value) ? parseInt(value) : 0; break;
+					case 'number': value = parseFloat(value) ? parseFloat(value) : 0.0; break;
 					case 'string': value = String(value); break;
 					case 'bool': value = !!value; break;
 				}
@@ -90,6 +67,7 @@ class DSObject extends EventEmitter {
 			value: function() { this.emit(change, this[privProp], this[privProp]) },
 			writable: false
 		});
+
 		this[change].Name = change
 		this[change].connect = function(slot) {
 			if (!slot) {
@@ -198,41 +176,8 @@ class DSObject extends EventEmitter {
 		}
 	}
 }
-
-
 		//if (DSObject.prototype.addProperies)
 			//DSObject.prototype.addProperies.call(this)
-
-
-//obj.bind('q', function() { return this.q1 + this.q2 }, [obj, 'q1', obj, 'q2'])
-
-/*
-class SomeButton extends DSObject {
-	constructor() {
-		super()
-
-		this.prop('text', 'string')
-		this._text = 'Text 1'
-		this.onChange('text', (text) => console.log(1, text))
-	}
-}
-
-class SomeLabel extends SomeButton {
-	constructor() {
-		super()
-
-		this.text = 'Text 2'
-		this.onChange('text', (text) => text = 5)
-	}
-}
-
-let $$$mainObject = new DSObject
-let $$$dfdfsgdsk4334 = new SomeLabel
-$$$dfdfsgdsk4334.parent = $$$mainObject
-$$$dfdfsgdsk4334.id = 'sb'
-sb.text = "Text 3"
-log(sb)
-*/
 
 class Item extends DSObject {
     constructor() {
@@ -263,94 +208,32 @@ class Item extends DSObject {
 // return
 const item = new Item()
 item.id = 'test'
-item.prop('p', 'int')
-test.p = 12
-item.onChange('p', function(value, old) { console.log('p', value, old) })
+test.prop('p', 'string')
+test.p = 'OLD'
+
+test.onChange('p', function(value, old) { console.log('p', value, old) })
 
 test.signal('messageReceived')
-test.signal('sendToPost', function(person, notice) {
+
+test.sendToPost = function(person, notice) {
 	console.log("Sending to post: " + person + ", " + notice)
-})
-test.signal('sendToTelegraph', function(person, notice) {
+}
+test.sendToTelegraph = function(person, notice) {
 	console.log("Sending to telegraph: " + person + ", " + notice)
-})
-test.signal('sendToEmail', function(person, notice) {
-	console.log("Sending to email: " + person + ", " + notice)
-})
+}
+test.sendToEmail = function(person, notice) {
+	console.log(tr("Sending to email: ") + person + ", " + notice)
+}
+
 test.messageReceived.connect(test.sendToPost)
 test.messageReceived.connect(test.sendToTelegraph)
 test.messageReceived.connect(test.sendToEmail)
 test.messageReceived.connect(test.sendToPisun)
-// test.messageReceived.connect(test.pChange())
-// test.messageReceived.connect(function(name, message) { log(`Пашёл нахуй, ${name}, со своим ${message}!`)} )
+test.messageReceived.connect((name, message) => { log(`Пашёл нах, ${name}, со своим ${message}!`)} )
 test.pChange.connect(test.messageReceived)
 
-test.p = 15
+test.p = 'NEW'
 
-Timer.singleShot(1000000, function() {})
-
-// test.messageReceived('Tom', 'Happy Birthday')
-
-// test.pChange.connect(test.messageReceived)
-
-// test.pChange()
-// test.p = 10
-
-// log(another)
-// log(test)
-
-//item.herChange()
-// log(test.her)
-
-// item.read(1, 2, 3)
-// console.log(item.onBarChange.toString())
-
-// test.her = 500
-// log(item)
-// test.prop('s', 'int')
-// test.prop('s1', 'int')
-// test.prop('s2', 'int')
-// test.bind('s', function() { return this.s1 + this.s2 }, [test, 's1', test, 's2'] )
-// test.onChange('s', (value) => console.log('s =', value))
-// test.onChange('s2', () => this.s = this.s1 + this.s2)
-// test._s1 = 2
-// test.s2 = 3
-
-// test.signal('rock', function(va, ol, e, aa, bb, cc, dd) { console.log(`i'm rock man`, va, ol, e, aa, bb, cc, dd)})
-// test.rock(1, 2, 3, 5, 6, 7, 3, 2, 1)
-
-// test.signal('kik', function(value) { log('kik', value, this.toString()) })
-// test.connect('kik', 'rock')
-// test.connect('sChange', 'kik')
-// test.connect('kik', 'kik')
-// test.kik(1, 2, 3, 4, 5, 6, 7, 8)
-// test.sChange.connect(test.rock)
-// test.rock.connect(test.kik)
-
-// test.kik(1, 2)
-// test.s = 1112
+test.messageReceived('Tom', 'Happy Birthday')
 
 //Timer.singleShot(10000, function(){})
-
-// class kek {
-// 	constructor() {
-// 		Object.defineProperty(this, 'piska', {
-// 			// value: function(...values) { print(...values) },
-// 			get: function() { return function(){} }
-// 			//writable: false
-// 		});
-// 		// log(this.piska())
-// 	}
-// }
-
-// function kek() {
-	// kek.connect = function() { log('connect') }
-	// log('emit')
-// } 
-// let kek = function() { console.log('emit')}
-// kek.connect = function() { console.log('connect')}
-// kek()
-
-// var kik = new kek()
-// kik.piska(1)
-// print(kik.piska)
