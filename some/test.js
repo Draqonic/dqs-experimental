@@ -22,23 +22,109 @@ class Item extends DSObject {
     constructor() {
 		super()
 
-        this.props([['her', 'int', 100], ['reg', 'any', /\s+/g], ['privet', 'string', 'hihihi'], ['iint', 'int', 111], ['foo', 'int', 6], ['sss', 'any'], ['bar', 'int'], ['baz', 'number'], ['bak', 'any', [ 34, 323,{hi: 555, buy: 10},342]], ['kek', 'any'], ])
-		this.bind('bar', function() { return 10 + this.foo }, [this, 'foo'])
-		this.bind('kek', function() { return 'KEK' + this.bar }, [this, 'foo'])
-		this.bind('baz', function() { return this.foo }, [this, 'foo'])
+        // this.props([['her', 'int', 100], ['reg', 'any', /\s+/g], ['privet', 'string', 'hihihi'], ['iint', 'int', 111], ['foo', 'int', 6], ['sss', 'any'], ['bar', 'int'], ['baz', 'number'], ['bak', 'any', [ 34, 323,{hi: 555, buy: 10},342]], ['kek', 'any'], ])
+		// this.bind('bar', function() { return 10 + this.foo }, [this, 'foo'])
+		// this.bind('kek', function() { return 'KEK' + this.bar }, [this, 'foo'])
+		// this.bind('baz', function() { return this.foo }, [this, 'foo'])
 
 		// this.updateBinds() обновление всех, исходя из зависимостей, detect bind loop
 
-		this.onChange('bar', function(value, old) {
-			log(`bar = ${value} (old: ${old})`)
-		})
+		// this.onChange('bar', function(value, old) {
+			// log(`bar = ${value} (old: ${old})`)
+		// })
 		// onCompleted
 	}
 }
 
+
+
+// class Obj {
+
+// }
+// log(Obj.prototype)
+// Object.defineProperty(Obj.prototype, 's', {
+	// value: 5
+// });
+// let obj = new Obj
+// log(obj.s)
+// function Obj() {
+// };
+// for(let i = 0; i !== 1000; ++i)
+// DSObject.prop('hello', 'int', 4, DSObject.prototype)
+
+// // for(let i = 0; i !== 10000; ++i) {
+	// let obj = new DSObject()
+	// let obj2 = new DSObject()
+	// obj.hello = 1
+	// obj.hello = 2
+// 	// obj.hello = 3
+// 	// obj.hello = 4
+	
+// 	obj.hello = 5
+	// obj2.hello = 6
+// 	obj.setId('qw')
+// 	obj2.setId('we')!!!
+// obj.hello = 111111
+// obj2.hello = 222222
+// 	log(obj.hello)
+// 	log(obj2.hello)
+// !!!!
+// 	log(obj)
+// 	// obj2.hello = 6
+// 	// log(obj.binds)
+// 	// log(this.properties)
+// 	// log(qw)
+// 	// log(we) 
+// 	// log(obj.hello)
+	
+// 	// log(obj2.hello)
+// 	// obj.prop()
+// // log(obj.helloChange.Name)
+// // obj.helloChange()
+// // }
+// log('end')
+
+// DSObject.prop('hello', 'any', 500)
+// DSObject.onChange('hello', function(_new, old) { log('!', _new, old)})
+
+let obj1 = new DSObject()
+
+// let obj2 = new DSObject()
+// let obj3 = new DSObject()
+// obj1.setId('ob1')
+// obj2.setId('ob2')
+// obj3.setId('ob2')
+// DSObject.prop('hello', 'any', 500)
+
+// ob1.hello = 10
+// log(ob1.hello, ob2.hello)
+// ob1.hello = 11
+// ob2.hello = 55
+// log(ob1.hello, ob2.hello)
+// ob2.hello = 66
+
+DSObject.prop('jfjfjfjjf', 'any', 5000)
+log('>', obj1.jfjfjfjjf)
+
+// for(let j = 0; j !== 20; ++j)
+// DSObject.prop('kek' + j, 'int', 10)
+
+Item.prop('jfjfjfjjf', 'any', 5000)
 const item = new Item()
-item.id = 'obj'
-obj.foo = -15
-log(obj)
+
+log('item', item.jfjfjfjjf)
+
+
+return
+for(let i = 0; i !== 10000; ++i) {
+	let item = new DSObject()
+	// item.onChange('hello', function(_new, old) { log('!', _new, old)})
+	// item.kek5 = i
+	item.setId('i' + i)
+}
+// i555.kek = 222
+// log(i555)
+// i555.kekChange()
+setTimeout(function() {}, 5000000)
 
 //Timer.singleShot(10000, function(){})

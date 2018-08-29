@@ -11,8 +11,15 @@ class DSObject extends EventEmitter {
 		this.parent = null
 		this.binds = []
 		this.signals = []
-		this.child = []
+		this.children = []
+		//this.propert = Object.assign({}, DSObject.prototype.properties)
+		// log(this.properties)
 		this.properties = {}
+		// for )
+	
+		// for (let key in DSObject.prototype.properties) {
+		// 	this.properties[key] = Object.assign({}, DSObject.prototype.properties[key])
+		// }
 	}
 
 	props(properties) {
@@ -21,62 +28,49 @@ class DSObject extends EventEmitter {
 		}
 	}
 
-	prop(property, type, val) {
-		if (!type)
-			type = 'any';
-
-		if(property in this.properties) {
+	static prop(property, type, val, target) {
+		if (!type) type = 'any';
+		if (!this.prototype.properties) this.prototype.properties = {}
+		let prop = this.prototype.properties
+	
+		if(property in prop) {
 			error(`Error: Property '${property}' already exists`);
 			return;
 		}
-
-		this.properties[property] = { type: type, value: undefined }
-		let prop = this.properties[property];
+	
+		prop[property] = { type: type, value: undefined }
 		const change = `${property}Change`;
-
-		Object.defineProperty(this, property, {
-			get: function() {
-				return prop.value;
-			},
-			set: function(value) {
-				switch(prop.type) {
-					case 'int': value = parseInt(value) ? parseInt(value) : 0; break;
-					case 'number': value = parseFloat(value) ? parseFloat(value) : 0.0; break;
-					case 'string': value = String(value); break;
-					case 'bool': value = !!value; break;
-				}
-
-				if (prop.value === value)
-					return;
-
-				let oldValue = prop.value;
-				prop.value = value;
-				this.emit(change, prop.value, oldValue);
-			}
+	
+		Object.defineProperty(this.prototype, property, {
+			get: function() { return this.getProp(property) },
+			set: function(value) { this.setProp(property, value) }
 		});
-
-		Object.defineProperty(this, change, {
-			value: function() { this.emit(change, prop.value, prop.value) },
+	
+		Object.defineProperty(this.prototype, change, {
+			value: function() {
+				this.emit(change, prop.value, prop.value)
+			},
 			writable: false
 		});
-
-		this[change].Name = change;
-		this[change].connect = function(slot) {
-			if (!slot) {
-				error(`Error: Undefined slot for signal '${change}'`);
-				return;
-			}
-			this.connect(change, slot.Name ? slot.Name : slot);
-		}.bind(this)
-
+	
+		// this.prototype[change].Name = change;
+		// this.prototype[change].connect = function(slot) {
+		// 	if (!slot) {
+		// 		error(`Error: Undefined slot for signal '${change}'`);
+		// 		return;
+		// 	}
+		// 	this.connect(change, slot.Name ? slot.Name : slot);
+		// }.bind(this)
+	
 		switch(type) {
 			case 'int': val = parseInt(val) ? parseInt(val) : 0; break;
 			case 'number': val = parseFloat(val) ? parseFloat(val) : 0.0; break;
 			case 'string': val = String(val); break;
 			case 'bool': val = !!val; break;
 		}
-		prop.value = val
-
+		// log(this)
+		this.prototype.properties[property].value = val
+	
 		//log(`New property: ${property} (${type})`, val ? `= ${val}` : '');
 	}
 
@@ -139,14 +133,17 @@ class DSObject extends EventEmitter {
 		el.parent = this
 	}
 
-	get id() { return this.properties.id ? this.properties.id.value : undefined }
-	set id(id) {
-		if (this.properties.id) return error('Error: id is already set for this object')
-		this.properties.id = {type: 'id', value: id};
-		if (typeof window !== 'undefined')
+	setId(id) {
+		if (this.id) return error('Error: id is already set for this object')
+		this.id = id;
+		if (typeof window !== 'undefined') {
+			if (window[id]) { error('Error: id dublicate'); return }
 			window[id] = this
-		else if (typeof global !== 'undefined')
+		}
+		else if (typeof global !== 'undefined') {
+			if (global[id]) { error('Error: id dublicate'); return }
 			global[id] = this
+		}
 	}
 
 	bind(prop, upd, arr) {
@@ -161,6 +158,34 @@ class DSObject extends EventEmitter {
 		updater()
 	}
 
+	getProp(property) {
+		log(DSObject.prototype.properties[property])
+		let prop = property in this.properties ? this.properties[property] : DSObject.prototype.properties[property].value
+		return prop
+	}
+
+	setProp(property, value) {
+		const change = `${property}Change`;
+		if (!this.properties[property])
+			this.properties[property] = DSObject.prototype.properties[property].value
+		const type = DSObject.prototype.properties[property].type
+
+		let prop = this.properties[property]
+		switch(type) {
+			case 'int': value = parseInt(value) ? parseInt(value) : 0; break;
+			case 'number': value = parseFloat(value) ? parseFloat(value) : 0.0; break;
+			case 'string': value = String(value); break;
+			case 'bool': value = !!value; break;
+		}
+
+		if (prop === value)
+			return;
+
+		let oldValue = prop;
+		this.properties[property] = value;
+		this.emit(change, value, oldValue);
+	}
+
 	unbind(prop) {
 		let binds = this.binds
 		for(let i = 0; i !== binds.length; ++i) {
@@ -171,5 +196,5 @@ class DSObject extends EventEmitter {
 }
 //if (DSObject.prototype.addProperies)
     //DSObject.prototype.addProperies.call(this)
-    
+
 module.exports = DSObject
