@@ -32,15 +32,16 @@ Array.prototype.equals = function (array) {
     }       
     return true;
 }
+
 // Hide method from for-in loops
 Object.defineProperty(Array.prototype, "equals", {enumerable: false});
 
 class DSObject {
-	constructor() {
-		this.parent = null
+	constructor(parent) {
+		if (parent) this.parent = parent
 		this.binds = []
 		this.signals = {}
-		// this.children = []
+		this.children = []
 		this.properties = {}
 		this.pbind = []
 	}
@@ -96,7 +97,7 @@ class DSObject {
 	
 		Object.defineProperty(this.prototype, change, {
 			value: function() {
-				this.emit(change, prop.value, prop.value)
+				this.emit(change, this.getProp(property), this.getProp(property))
 			},
 			writable: false
 		});
@@ -112,7 +113,7 @@ class DSObject {
 	
 		switch(type) {
 			case 'int': val = parseInt(val) ? parseInt(val) : 0; break;
-			case 'number': val = parseFloat(val) ? parseFloat(val) : 0.0; break;
+			case 'number': val = Number(val) ? Number(val) : 0.0; break;
 			case 'string': val = val ? String(val) : ''; break;
 			case 'bool': val = !!val; break;
 		}
@@ -278,7 +279,7 @@ class DSObject {
 			let oldProp = this.properties[prop] || this.constructor.prototype.properties[prop].value
 			let newProp = upd.bind(this)()
 			this.properties[prop] = newProp
-			if (newProp !== oldProp)
+			if (newProp !== oldProp) // TODO: check arrays
 				this.emit(prop + 'Change', newProp, oldProp)
 		}.bind(this)
 
@@ -405,6 +406,16 @@ class DSObject {
 		}
 		// log(res)
 		this.bind(prop, func, ...res)
+	}
+
+
+	get parent() {
+		return this.Parent ? this.Parent : null
+	}
+
+	set parent(target) {
+		this.Parent = target
+		target.children.push(this)
 	}
 }
 //if (DSObject.prototype.addProperies)
