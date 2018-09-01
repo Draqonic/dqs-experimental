@@ -1,3 +1,5 @@
+'use strict';
+
 const log = console.log
 const warn = console.warn
 const error = console.error
@@ -55,6 +57,8 @@ class DS {
 
 
 	static bind(func) {
+		if (typeof func !== 'function')
+			return error('ERROR BIND FUNCTION')
 		let up = func
 		let upd = up.toString()
 		let arr = []

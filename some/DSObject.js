@@ -1,3 +1,5 @@
+'use strict';
+
 const log = console.log
 const warn = console.warn
 const error = console.error
@@ -44,12 +46,32 @@ class DSObject {
 		this.children = []
 		this.properties = {}
 		this.pbind = []
+		this.priv = {}
 	}
+
+	complete() {}
 
 	props(properties) {
 		for(const property of properties) {
 			this.prop(property[0], property[1], property[2])
 		}
+	}
+
+	bindFor(dsBind, property) {
+		let res = []
+
+		for(const kk of dsBind) {
+			if (typeof this[kk] === 'function') {
+				// log(typeof this[kk] === 'function')
+				let kek = this.bindFor(DS.bind(this[kk]).DSBind['this'], property)
+				res.push(...kek)
+			} else if (this[kk] !== undefined && kk !== property) {
+				res.push(this)
+				res.push(kk)
+			}
+		}
+
+		return res
 	}
 
 	static property(property, type, val, target) {
@@ -76,14 +98,8 @@ class DSObject {
 			},
 			set: function(value) {
 				if (value && value.hasOwnProperty('DSBind')) {
-					//log('DS', value)
-					let res = []
-					for(const kk of value.DSBind['this']) {
-						if (this[kk] !== undefined) {
-							res.push(this)
-							res.push(kk)
-						}
-					}
+					let dsBind = value.DSBind['this']
+					let res = this.bindFor(dsBind, property)
 					this.bind(property, value.DSFunc, ...res)
 				}
 				else {
@@ -122,20 +138,27 @@ class DSObject {
 		//log(`New property: ${property} (${type})`, val ? `= ${val}` : '');
 	}
 
-	change(prop, func) {
+	static change(prop, func, target) {
+		if (!target) target = this
 		if (!func)
 			return error(`Error: need function for on${prop}Change`)
+		if (Array.isArray(prop)) {
+			for(const pr of prop)
+				target.change(pr, func)
+			return
+		}
 
-		this.on(`${prop}Change`, func)
+		let prototype = this.prototype
+		if (target instanceof DSObject)
+			prototype = target.constructor.prototype.properties
+		if (!prototype[prop])
+			return error(`Error: cant find property ${prop}`)
+
+		target.on(`${prop}Change`, func)
 	}
 
-	static change(prop, func) {
-		if (!this.prototype[prop])
-			return error(`Error: cant find property ${prop}`)
-		if (!func)
-			return error(`Error: need function for on${prop}Change`)
-
-		this.on(`${prop}Change`, func)
+	change(prop, func) {
+		DSObject.change(prop, func, this)
 	}
 
 	static signal(name) {
@@ -152,6 +175,7 @@ class DSObject {
 		});
 	}
 
+	// TODO: reimpl on as change
 	static on(signal, slot) { // add string
 		if (!this.prototype.signals) this.prototype.signals = {}
 
@@ -186,15 +210,6 @@ class DSObject {
 					func.bind(this)(...values)
 			}
 		}
-	}
-
-	change(prop, func) {
-		if (!this.prototype[prop])
-			return error(`Error: cant find property ${prop}`)
-		if (!func)
-			return error(`Error: need function for on${prop}Change`)
-
-		this.on(`${prop}Change`, func)
 	}
 
 	on(signal, slot) {

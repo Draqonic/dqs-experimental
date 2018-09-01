@@ -11,11 +11,38 @@ const { DS, DSObject } = require('./DSObject')
 const tr = (text) => { return DS.tr(text) }
 const forceTr = (text, locale) => { return DS.forceTr(text, locale) }
 
-class Timer {
-	static singleShot(interval, func) {
-		setTimeout(func, interval)
-	}
-}
+
+/*
+	1. сигналы
+	2. переменные
+	3. новые onChange
+	4. onComplete()
+*/
+
+
+/*
+DSObject.property('arr')
+
+var obj = new DSObject
+var obj2 = new DSObject(obj)
+
+// log(obj, obj2)
+// obj2.parent = obj
+
+// log(obj, obj2)
+
+// obj.arr = [1, 2, 3, 4, 5]
+// DSObject.change('arr', (value) => log('!', value))
+
+// obj2.parent.arr[44] = 27
+// obj2.parent.arrChange()
+
+// obj2.parent.arr.splice(4)
+// obj2.parent.arrChange()
+
+log(obj2.parent)
+
+return
 
 class Item extends DSObject {
     constructor() {
@@ -93,9 +120,9 @@ DSObject.property('red', 'int')
 DSObject.property('black', 'int')
 DSObject.property('kek', 'string')
 
-
+*/
 // obj1.red = 555
-let kek = () => {obj1.red++}
+// let kek = () => {obj1.red++}
 // for(let i = 0; i != 500000; ++i)
 // obj1.on('read', kek)
 // log(obj1.red)
@@ -115,6 +142,18 @@ let kek = () => {obj1.red++}
 // 	return marmelad + this.black * 10
 // })
 // obj1.red = 50
+const Timer = require('./timer')
+let timer = new Timer
+
+log('kek')
+timer.change(['interval', 'repeat', 'triggeredOnStart'], (val) => log('inter', val))
+timer.interval = 100
+timer.on('triggered', () => log('tick'))
+timer.triggeredOnStart = true
+timer.repeat = true
+timer.start()
+// timer.complete()
+return
 class Rectangle extends DSObject {
 
 }
@@ -122,28 +161,42 @@ class Obo extends DSObject {
 
 }
 
-Obo.property('one', 'int', 5)
-Obo.property('qqq', 'int', 5)
-Obo.property('sss', 'int', 5)
-Obo.change('sss', (value, old) => {log('obo.sss', value, old)})
-Rectangle.property('two', 'int', 25)
+Rectangle.property('one', 'int', 1)
+Rectangle.property('qqq', 'int', 2)
+Rectangle.property('sss', 'int', 3)
+// Obo.change('sss', (value, old) => {log('obo.sss', value, old)})
+Rectangle.property('two', 'int')
 Rectangle.change('two', (value, old) => {log(value, old)})
 
 
 let obo = new Obo
 let rect = new Rectangle
 
-rect.bind('two', function() { return obo.one * obo.qqq * obo.sss }, obo, 'one', obo, 'qqq', obo, 'sss')
+// 
+// 
+rect.kook = function() { return this.sss }
+rect.kaak = function() { return this.qqq * this.kook() }
+rect.two = DS.bind(function() {
+	// log('timer')
+	// timer.running = false
+	return this.kaak() + this.one
+})
+rect.sss = 10 // обновляет rect.two
+
+
+// rect.one = 3
+// rect.qqq = 4
+
 
 // obo.one = 10
 // 
-rect.two = 125
-obo.one = 2011
-obo.one = 303
+// rect.two = 125
+// rect.one = 2011
+// rect.one = 303
 
 // rect.unbind('two')
 
-obo.one = 11222
+// rect.one = 11222
 
 // log(obo.signals)
 // log(rect.binds)
