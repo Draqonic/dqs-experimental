@@ -330,7 +330,13 @@ class DSObject {
 	}
 
 	getProp(property) {
-		let prop = property in this.properties ? this.properties[property] : this.constructor.prototype.properties[property].value
+		let prop
+		if (this[`${property}Get`])
+			prop = property in this.properties ? this[`${property}Get`](this.properties[property]) :
+				this[`${property}Get`](this.constructor.prototype.properties[property].value)
+		else
+			prop = property in this.properties ? this.properties[property] : this.constructor.prototype.properties[property].value
+
 		return prop
 	}
 
