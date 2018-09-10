@@ -1,0 +1,35 @@
+{
+  "name": "DranoqScript",
+  "displayName": "DranoqScript",
+  "description": "DranoqScript language support for Visual Studio Code",
+  "version": "1.0.0",
+  "publisher": "Dranoq",
+  "icon": "images/icon.png",
+  "galleryBanner": {
+    "color": "#FFFFFF",
+    "theme": "light"
+  },
+  "license": "SEE LICENSE IN LICENSE.md",
+  "bugs": { "url": "https://github.com/bbenoist/vscode-qml/issues" },
+  "homepage": "https://github.com/bbenoist/vscode-qml/blob/master/README.md",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bbenoist/vscode-qml.git"
+  },
+  "engines": {
+    "vscode": "^0.10.1"
+  },
+  "categories": [ "Languages" ],
+  "contributes": {
+    "languages": [{
+      "id": "dqs",
+      "extensions": [".dqs",".DSScript"],
+      "configuration": "./dqs.configuration.json"
+    }],
+    "grammars": [{
+      "language": "dqs",
+      "scopeName": "source.dqs",
+      "path": "./syntaxes/dqs.tmLanguage"
+    }]
+  }
+}
