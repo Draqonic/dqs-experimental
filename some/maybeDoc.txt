@@ -1,7 +1,0 @@
-Doc {
-    prop: 'foo'
-    desc: 'Amazing property!'
-
-    prop: 'bar'
-    desc: 'Best ever string'
-}

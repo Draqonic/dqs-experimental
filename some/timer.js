@@ -42,7 +42,8 @@ class Timer extends DSObject {
 
 	leftSeconds() {
 		if (!this.active) return 0
-		return Math.ceil((this.priv.timer._idleStart + this.priv.timer._idleTimeout - (new Date - this.startTime)) / 1000)
+		return Math.ceil((this.priv.timer._idleStart
+			+ this.priv.timer._idleTimeout - (new Date - this.startTime)) / 1000)
 	}
 }
 

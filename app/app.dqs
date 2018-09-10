@@ -53,7 +53,7 @@ prop string privet: 'hihihi'
 
   onFooChange: { console.log(value) // hello
      } // hello
-        static       func  hello( world, omega, alpha, kekich ) : { aaa
+        static       function  hello( world, omega, alpha, kekich )     	 { aaa
         
         
               bbb

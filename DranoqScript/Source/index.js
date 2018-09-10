@@ -257,7 +257,7 @@ class DSParser {
 		if (this.componentName === 'Object') this.componentName = 'DSObject'
 		log(signals)
 		// log(newProps)
-		// log(chProps)
+		log(chProps) // TODO: !!!remove new props
 		log(slots, onCreate, onComplete)
 		let sp = ' '.repeat(4)
 		let Class = `class ${this.fileName} extends ${this.componentName} {\n${sp}constructor() {\n${sp}${sp}super()\n`
