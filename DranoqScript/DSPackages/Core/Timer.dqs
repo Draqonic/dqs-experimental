@@ -6,42 +6,39 @@ Object {
     signal triggered
 
     onActiveChange, onIntervalChange, onRepeatChange: {
-        this.priv.renewTimer()
+      this.priv.renewTimer()
     }
 
     static function singleShot(interval, func) {
-		setTimeout(func, interval)
-	}
+      setTimeout(func, interval)
+    }
 
     function start() {
-		if (this.runOnStart)
-			this.triggered()
-		this.active = true
+      if (this.runOnStart)
+        this.triggered()
+      this.active = true
     }
 
     function stop() {
-
     }
 
     function restart() {
-        
     }
 
     function leftSeconds() {
-		if (!this.active) return 0
-		return Math.ceil((this.priv.timer._idleStart +
-            this.priv.timer._idleTimeout - (new Date - this.startTime)) / 1000)
+      if (!this.active) return 0
+      return Math.ceil((this.priv.timer._idleStart +
+        this.priv.timer._idleTimeout - (new Date - this.startTime)) / 1000)
     }
 
     private function renewTimer() {
-		if (this.priv.timer)
-			clearTimeout(this.priv.timer)
-		if (!this.active) return
-
-		if (this.repeat)
-			this.priv.timer = setInterval(this.triggered.bind(this), this.interval)
-		else
-			this.priv.timer = setTimeout(this.triggered.bind(this), this.interval)
-		this.startTime = new Date()
+      if (this.priv.timer)
+        clearTimeout(this.priv.timer)
+      if (!this.active) return
+      if (this.repeat)
+        this.priv.timer = setInterval(this.triggered.bind(this), this.interval)
+      else
+        this.priv.timer = setTimeout(this.triggered.bind(this), this.interval)
+      this.startTime = new Date()
     }
 }

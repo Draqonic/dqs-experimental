@@ -6,7 +6,8 @@
         hhhh: 3
         id: item
         //id: dgs
-        prop any reg: {  /\s+/g  }
+        
+
 
            Object {
              prop int hello: 5
@@ -18,6 +19,7 @@
            //obj.height 
            //: 4
 
+// #IfType WebGL
 her: 100
 
 		   onCreate:   { log('Create!') }
@@ -27,24 +29,25 @@ her: 100
     }
 
 prop string privet: 'hihihi'
+// #EndIfType
 	prop
 					int
 						iint;         prop 
 	int  foo: 6
 
- prop any sss: Object {
-    prop int hello: 10
- }
+ //prop any sss: Object {
+ //   prop int hello: 10
+ //}
     onComplete: {
       log('Complete!')
     }
 
 
   signal mem(lol, kek)
+  onMem: { log('mem', lol, kek); kek(1,) }
 
-  onMem: { log('mem', lol, kek) }
 
- prop enum bar: {{One, Two, Three}: Two}
+ // prop enum bar: {{One, Two, Three}: Two}
 	
 	prop int bar: { 
 		 5 * 10+this.foo 
@@ -60,8 +63,9 @@ prop string privet: 'hihihi'
            }
        
 
-     prop number baz: foo ;  prop any bak :{[ 34,
+     prop number baz: foo.toString() ;  prop any bak :{[ 34,
        323,{hi: 555, buy: 10},342]}
        prop   any  kek: {'KEK'             +  this.bar }
+       prop any reg: {  /\s+/g  }
      }
     

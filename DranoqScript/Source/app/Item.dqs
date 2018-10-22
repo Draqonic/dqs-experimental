@@ -3,7 +3,7 @@
 Object {
   prop int width
   prop int height
-	prop lazy foo: 150
+	prop int foo: 150
   prop int bar: 150 * foo - 50
   prop int baz: {
     return foo * 10
@@ -12,7 +12,7 @@ Object {
     return baz - 50
   }
   
-	async hello(world) {
+	static hello(world) {
     if(something)
       console.log('code')
 	}
