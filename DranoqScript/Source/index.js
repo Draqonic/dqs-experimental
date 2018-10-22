@@ -24,7 +24,8 @@ const varDisableNames = ['do', 'if', 'in', 'for', 'let', 'new', 'try', 'var', 'c
   'with', 'await', 'break', 'catch', 'class', 'const', 'false', 'super', 'throw', 'while', 'yield', 'delete', 'export',
   'import', 'public', 'return', 'static', 'switch', 'typeof', 'default', 'extends', 'finally', 'package', 'private',
   'continue', 'debugger', 'function', 'arguments', 'interface', 'protected', 'implements', 'instanceof', 'undefined ',
-  'null', 'boolean', 'string', 'RegExp', 'prop'] // TODO: disable prop any id
+  'null', 'boolean', 'string', 'RegExp', 'prop'
+] // TODO: disable prop any id
 const errorText = {
   0: 'Total error',
   1: 'Сomponent name must begin with a large english letter',
@@ -47,7 +48,9 @@ const warnText = {
 
 class DSParser {
   constructor (text, fileName) {
-    if (fileName) { log('compile', fileName) }
+    if (fileName) {
+      log('compile', fileName)
+    }
     this.fileName = fileName
     this.text = text.replace(/\t/g, '    ')
     this.all = this.text.split('\n')
@@ -61,7 +64,9 @@ class DSParser {
     this.slots = []
     this.objs = []
     this.propFuncs = []
+  }
 
+  parse () {
     try {
       this.firstStep()
       this.work()
@@ -74,7 +79,10 @@ class DSParser {
     let errorT = isWarn ? warnText[errNumber] : errorText[errNumber]
     if ((!l || !c) && !isWarn) {
       err('Error:', errorT)
-      throw new Error({ error: errNumber, errorText: errorT })
+      throw new Error({
+        error: errNumber,
+        errorText: errorT
+      })
     }
     let errorMessage = `${this.fileName}:${++l}:${++c}: ${errorT}`
     let currentStr = this.all[l - 1].replace(/\t/g, '    ').replace(/\r/g, '    ')
@@ -84,19 +92,35 @@ class DSParser {
     err(errorMessage)
     err()
 
-    if (!isWarn) { throw new Error({ error: errNumber, errorText: errorText[errNumber], file: this.fileName, line: l, column: c, str: currentStr.trim() }) }
+    if (!isWarn) {
+      throw new Error({
+        error: errNumber,
+        errorText: errorText[errNumber],
+        file: this.fileName,
+        line: l,
+        column: c,
+        str: currentStr.trim()
+      })
+    }
   }
 
   logWarn (warnNumber, l, c) {
-    if (warnEnabled) { this.logError(1, l, c, 0, true) }
+    if (warnEnabled) {
+      this.logError(1, l, c, 0, true)
+    }
   }
 
   firstStep () {
-    let all = this.all; let strs = this.strs
+    let all = this.all
+    let strs = this.strs
     let funcPrevI
 
     let func = ''
-    let b = { count: 0, mode: false, i: -1 }
+    let b = {
+      count: 0,
+      mode: false,
+      i: -1
+    }
     let tempB, tempI, tempJ, tempBB
 
     for (let i = 0; i !== all.length; i++) {
@@ -112,13 +136,19 @@ class DSParser {
           if (all[i][j - 1] === '/' || all[i][j + 1] === '/') {
             abort = true
             continue
-          } else { throw this.logError(5, i, j) }
+          } else {
+            throw this.logError(5, i, j)
+          }
         }
 
         if (ch === '{') {
-          if (strs[strs.length - 1] && strs[strs.length - 1].s === '\n' && !b.mode) { this.logWarn(1, i, j - 1) }
+          if (strs[strs.length - 1] && strs[strs.length - 1].s === '\n' && !b.mode) {
+            this.logWarn(1, i, j - 1)
+          }
 
-          if (!tempB) { tempB = true } else {
+          if (!tempB) {
+            tempB = true
+          } else {
             b.mode = true
             if (!tempBB) {
               tempI = i
@@ -141,18 +171,41 @@ class DSParser {
           }
 
           if ((b.count === 0 && b.start) || !b.mode) {
-            let newFunc = func.trim(); func = ''
+            let newFunc = func.trim()
+            func = ''
             if (newFunc[0] !== '{' || i === all.length - 2) throw this.logError(10, tempI, tempJ)
-            b.mode = false; b.start = false; tempBB = false
+            b.mode = false
+            b.start = false
+            tempBB = false
             // this.funcs[this.funcs.length - 1].body = newFunc
 
-            strs.push({ s: newFunc, l: tempI, c: tempJ, func: true })
+            strs.push({
+              s: newFunc,
+              l: tempI,
+              c: tempJ,
+              func: true
+            })
           }
         } else if (ch !== ' ' || ch === ':') {
-          if (ch === ':') { strs.splice(strs.length - (all[i][j - 1] === ' ' ? 1 : 0), 0, { s: ':', v: true, l: i, c: j }) } else if (ch !== ';' && ch !== '\r') { str += ch }
+          if (ch === ':') {
+            strs.splice(strs.length - (all[i][j - 1] === ' ' ? 1 : 0), 0, {
+              s: ':',
+              v: true,
+              l: i,
+              c: j
+            })
+          } else if (ch !== ';' && ch !== '\r') {
+            str += ch
+          }
         } else {
           if (str) { // TODO: maybe not add symbols at end?
-            if (!b.mode) { strs.push({ s: str, l: i, c: j - str.length }) }
+            if (!b.mode) {
+              strs.push({
+                s: str,
+                l: i,
+                c: j - str.length
+              })
+            }
           }
 
           // TODO
@@ -198,13 +251,24 @@ class DSParser {
     let currentType = ''
 
     for (let i = 0; i !== strs.length; ++i) {
-      let pprev = strs[i - 2]; let prev = strs[i - 1]; let str = strs[i]; let next = strs[i + 1]; let nnext = strs[i + 2]; let nnnext = strs[i + 3]
+      let pprev = strs[i - 2]
+      let prev = strs[i - 1]
+      let str = strs[i]
+      let next = strs[i + 1]
+      let nnext = strs[i + 2]
+      let nnnext = strs[i + 3]
 
-      if (str.s === '#IfType') { currentType = next.s }
+      if (str.s === '#IfType') {
+        currentType = next.s
+      }
 
-      if (str.s === '#EndIfType') { currentType = '' }
+      if (str.s === '#EndIfType') {
+        currentType = ''
+      }
 
-      if (currentType !== '' && currentType !== buildType) { continue }
+      if (currentType !== '' && currentType !== buildType) {
+        continue
+      }
 
       if (str.s === ':') {
         if (pprev && pprev.s === 'prop') { // if new prop with value
@@ -214,7 +278,9 @@ class DSParser {
             value = nnext.s
             if (/^[A-Z]+$/.test(nnext.s[0])) {
               // TODO: if (func)
-              if (nnnext) { value += nnnext.s }
+              if (nnnext) {
+                value += nnnext.s
+              }
             }
           }
           if (varTypes.indexOf(prev.s) === -1) this.logError(11, prev.l, prev.c - 1, prev.s.length)
@@ -222,23 +288,38 @@ class DSParser {
           // log(value, value[0], value[0].toUpperCase(), value[0] != value[0].toUpperCase())
           // if (value[0] !== value[0].toUpperCase()) this.checkJS(value)
           this.checkJS(value)
-          newProps[next.s] = { type: prev.s, value }
+          newProps[next.s] = {
+            type: prev.s,
+            value
+          }
         }
       }
 
       if (str.s === 'prop' && nnext.s !== ':') {
         this.checkVar(nnext, next)
         if (nnext.s in newProps) this.logError(8)
-        newProps[nnext.s] = { type: next.s, value: '' }
+        newProps[nnext.s] = {
+          type: next.s,
+          value: ''
+        }
       }
 
       if ((!pprev || (pprev && pprev.s !== 'prop')) && str.s === ':') {
         if (next.s.substr(0, 2) === 'on') {
           if (next.s.substr(next.s.length - 6, next.s.length - 1) === 'Change') {
-            slots.push({ name: next.s, value: nnext.s }) // TODO: check if prop exist
-          } else if (next.s === 'onCreate') { onCreate = nnext.s } else if (next.s === 'onComplete') { onComplete = nnext.s } else {
+            slots.push({
+              name: next.s,
+              value: nnext.s
+            }) // TODO: check if prop exist
+          } else if (next.s === 'onCreate') {
+            onCreate = nnext.s
+          } else if (next.s === 'onComplete') {
+            onComplete = nnext.s
+          } else {
             if (next.s in signals) throw this.logError(12, next.l, next.c - 2, next.s.length)
-            signals[next.s] = { value: this.checkJS(nnext.s) }
+            signals[next.s] = {
+              value: this.checkJS(nnext.s)
+            }
             // TODO: signal
           }
         } else if (next.s[next.s.length - 1] === ')') {
@@ -247,7 +328,11 @@ class DSParser {
           if (next.s === 'id') {
             if (id) this.logError(7, next.l, next.c - 2, 2)
             id = nnext.s
-          } else { chProps[next.s] = { value: this.checkJS(nnext.s) } }
+          } else {
+            chProps[next.s] = {
+              value: this.checkJS(nnext.s)
+            }
+          }
         }
       }
     }
@@ -271,38 +356,35 @@ class DSParser {
 
     let sp = ' '.repeat(4)
     let Class = `class ${this.fileName} extends ${this.componentName} {\n${sp}constructor() {\n${sp}${sp}super()\n`
+    let afterClass = ''
 
     if (newProps.length > 0) {
       Class += `${sp}${sp}this.addProperties([`
 
-      for (const kek of newProps) {
-        if (kek.type !== 'lazy' && kek.type !== 'enum') { // TODO
-          Class += `['${kek.name}', '${kek.type}'`
-          // Class += `\n${sp}${sp}addProperty('${kek.name}', '${kek.type}'`
-
-          Class += '], '
-        }
+      for (const key in newProps) {
+        let newProp = newProps[key]
+        Class += `[!!!'${key}', '${newProp.type}'`
+        Class += '], '
       }
       Class += '])'
     }
 
-    for (const kek of newProps) {
-      if (kek.type !== 'lazy' && kek.type !== 'enum') { // TODO
-        if (kek.value) {
-          if (kek.value[0] === '{' && kek.value[kek.value.length - 1] === '}') { // TODO
-            kek.value = kek.value.substr(1, kek.value.length - 2)
-          }
-          Class += `${sp}${sp}this._${kek.name} = ${kek.value.replace(/\s+/g, ' ').trim()}\n`
+    for (const key in newProps) {
+      let newProp = newProps[key]
+      if (newProp.value) {
+        if (newProp.value[0] === '{' && newProp.value[newProp.value.length - 1] === '}') { // TODO
+          newProp.value = newProp.value.substr(1, newProp.value.length - 2)
         }
+        Class += `${sp}${sp}this._${key} = ${newProp.value.replace(/\s+/g, ' ').trim()}\n`
       }
     }
 
-    for (const kek of chProps) {
-      Class += `${sp}${sp}this._${kek.name} = ${kek.value}\n`
+    for (const key in chProps) {
+      Class += `${sp}${sp}this._${key} = ${chProps[key].value}\n`
     }
 
-    for (const kek of slots) {
-      Class += `${sp}${sp}this.onChange('${kek.name}', function(value, old) ${kek.value})\n`
+    for (const key in slots) {
+      Class += `${sp}${sp}this.onChange('${key}', function(value, old) ${slots[key].value})\n`
     }
 
     Class += '\n    }'
@@ -321,22 +403,32 @@ class DSParser {
   checkComponentName (str) {
     if (!str) return
 
-    if (!/^[A-Z]+$/.test(str[0])) { return this.logError(1) }
+    if (!/^[A-Z]+$/.test(str[0])) {
+      return this.logError(1)
+    }
 
     let compNameCheck = /[^A-Za-z0-9]+/g.exec(str)
-    if (compNameCheck) { throw this.logError(2) }
+    if (compNameCheck) {
+      throw this.logError(2)
+    }
   }
 
   checkFirstLastBraces () {
     let strs = this.strs
 
-    if (strs[1].s !== '{') { throw this.logError(3) }
-    if (strs[strs.length - 1].s !== '}' && strs[strs.length - 1].s[strs[strs.length - 1].s.length - 1] !== '}') { throw this.logError(4) }
+    if (strs[1].s !== '{') {
+      throw this.logError(3)
+    }
+    if (strs[strs.length - 1].s !== '}' && strs[strs.length - 1].s[strs[strs.length - 1].s.length - 1] !== '}') {
+      throw this.logError(4)
+    }
   }
 
   checkVar (name, type) {
     // TODO: check first symbol (not digit or big num), disable symbols
-    if (varTypes.indexOf(type.s) === -1) { this.logError(11, type.l, type.c - 1, type.s.length) }
+    if (varTypes.indexOf(type.s) === -1) {
+      this.logError(11, type.l, type.c - 1, type.s.length)
+    }
     if (varTypes.indexOf(name.s) !== -1 || varDisableNames.indexOf(name.s) !== -1) {
       this.logError(8, name.l, name.c - 2, name.s.length)
     }
@@ -365,7 +457,7 @@ class DranoqScript {
     fs.readFile(mainFile, 'utf8', (error, text) => {
       if (error) err('Error?')
       let parser = new DSParser(text, mainFile)
-      console.log(parser)
+      parser.parse()
     })
     return true
   }
