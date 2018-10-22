@@ -74,7 +74,7 @@ class DSParser {
     let errorT = isWarn ? warnText[errNumber] : errorText[errNumber]
     if ((!l || !c) && !isWarn) {
       err('Error:', errorT)
-      throw { error: errNumber, errorText: errorT }
+      throw new Error({ error: errNumber, errorText: errorT })
     }
     let errorMessage = `${this.fileName}:${++l}:${++c}: ${errorT}`
     let currentStr = this.all[l - 1].replace(/\t/g, '    ').replace(/\r/g, '    ')
@@ -84,7 +84,7 @@ class DSParser {
     err(errorMessage)
     err()
 
-    if (!isWarn) { throw { error: errNumber, errorText: errorText[errNumber], file: this.fileName, line: l, column: c, str: currentStr.trim() } }
+    if (!isWarn) { throw new Error({ error: errNumber, errorText: errorText[errNumber], file: this.fileName, line: l, column: c, str: currentStr.trim() }) }
   }
 
   logWarn (warnNumber, l, c) {
@@ -190,7 +190,7 @@ class DSParser {
     let newProps = {} // done
     let chProps = {} // done
     let onCreate = ''
-    // let onComplete = ''
+    let onComplete = ''
     let signals = {} // TODO: parse signal
 
     // TODO: let allTypes = ['Server', 'Pure', 'HTML', 'WebGL']
@@ -228,14 +228,15 @@ class DSParser {
 
       if (str.s === 'prop' && nnext.s !== ':') {
         this.checkVar(nnext, next)
-        if (nnext.s in newProps) logError(8)
+        if (nnext.s in newProps) this.logError(8)
         newProps[nnext.s] = { type: next.s, value: '' }
       }
 
       if ((!pprev || (pprev && pprev.s !== 'prop')) && str.s === ':') {
         if (next.s.substr(0, 2) === 'on') {
-          if (next.s.substr(next.s.length - 6, next.s.length - 1) === 'Change') { slots.push({ name: next.s, value: nnext.s }) } // TODO: check if prop exist
-          else if (next.s === 'onCreate') { onCreate = nnext.s } else if (next.s === 'onComplete') { onComplete = nnext.s } else {
+          if (next.s.substr(next.s.length - 6, next.s.length - 1) === 'Change') {
+            slots.push({ name: next.s, value: nnext.s }) // TODO: check if prop exist
+          } else if (next.s === 'onCreate') { onCreate = nnext.s } else if (next.s === 'onComplete') { onComplete = nnext.s } else {
             if (next.s in signals) throw this.logError(12, next.l, next.c - 2, next.s.length)
             signals[next.s] = { value: this.checkJS(nnext.s) }
             // TODO: signal
@@ -254,10 +255,11 @@ class DSParser {
 
     this.fileName = 'Item' // TODO
     if (this.componentName === 'Object') this.componentName = 'DSObject'
+    log('onCreate', onCreate)
     log('signals', signals)
     log('new', newProps)
     log('ch', chProps) // TODO: !!!remove new props
-    // log(slots, onCreate, onComplete)
+    log(slots, onCreate, onComplete)
     // console.time(1)
     // try {
     //   for(const signal of signals)
@@ -287,8 +289,9 @@ class DSParser {
     for (const kek of newProps) {
       if (kek.type !== 'lazy' && kek.type !== 'enum') { // TODO
         if (kek.value) {
-          if (kek.value[0] === '{' && kek.value[kek.value.length - 1] === '}') // TODO
-          { kek.value = kek.value.substr(1, kek.value.length - 2) }
+          if (kek.value[0] === '{' && kek.value[kek.value.length - 1] === '}') { // TODO
+            kek.value = kek.value.substr(1, kek.value.length - 2)
+          }
           Class += `${sp}${sp}this._${kek.name} = ${kek.value.replace(/\s+/g, ' ').trim()}\n`
         }
       }
@@ -334,8 +337,9 @@ class DSParser {
   checkVar (name, type) {
     // TODO: check first symbol (not digit or big num), disable symbols
     if (varTypes.indexOf(type.s) === -1) { this.logError(11, type.l, type.c - 1, type.s.length) }
-    if (varTypes.indexOf(name.s) !== -1 ||
-      varDisableNames.indexOf(name.s) !== -1) { this.logError(8, name.l, name.c - 2, name.s.length) }
+    if (varTypes.indexOf(name.s) !== -1 || varDisableNames.indexOf(name.s) !== -1) {
+      this.logError(8, name.l, name.c - 2, name.s.length)
+    }
   }
 
   checkJS (func) {
