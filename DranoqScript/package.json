@@ -8,5 +8,13 @@
     "start": "babel Source/index.js -o index.js && node index.js"
   },
   "author": "Dranoq",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "standardx": "^3.0.1"
+  },
+  "eslintConfig": {
+    "rules": {
+      "curly": ["error", "multi-or-nest", "consistent"]
+     }
+  }
 }

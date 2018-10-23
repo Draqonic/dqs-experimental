@@ -48,9 +48,9 @@ const warnText = {
 
 class DSParser {
   constructor (text, fileName) {
-    if (fileName) {
+    if (fileName)
       log('compile', fileName)
-    }
+
     this.fileName = fileName
     this.text = text.replace(/\t/g, '    ')
     this.all = this.text.split('\n')
@@ -105,9 +105,8 @@ class DSParser {
   }
 
   logWarn (warnNumber, l, c) {
-    if (warnEnabled) {
+    if (warnEnabled)
       this.logError(1, l, c, 0, true)
-    }
   }
 
   firstStep () {
@@ -142,9 +141,8 @@ class DSParser {
         }
 
         if (ch === '{') {
-          if (strs[strs.length - 1] && strs[strs.length - 1].s === '\n' && !b.mode) {
+          if (strs[strs.length - 1] && strs[strs.length - 1].s === '\n' && !b.mode)
             this.logWarn(1, i, j - 1)
-          }
 
           if (!tempB) {
             tempB = true
@@ -258,17 +256,14 @@ class DSParser {
       let nnext = strs[i + 2]
       let nnnext = strs[i + 3]
 
-      if (str.s === '#IfType') {
+      if (str.s === '#IfType')
         currentType = next.s
-      }
 
-      if (str.s === '#EndIfType') {
+      if (str.s === '#EndIfType')
         currentType = ''
-      }
 
-      if (currentType !== '' && currentType !== buildType) {
+      if (currentType !== '' && currentType !== buildType)
         continue
-      }
 
       if (str.s === ':') {
         if (pprev && pprev.s === 'prop') { // if new prop with value
@@ -278,9 +273,8 @@ class DSParser {
             value = nnext.s
             if (/^[A-Z]+$/.test(nnext.s[0])) {
               // TODO: if (func)
-              if (nnnext) {
+              if (nnnext)
                 value += nnnext.s
-              }
             }
           }
           if (varTypes.indexOf(prev.s) === -1) this.logError(11, prev.l, prev.c - 1, prev.s.length)
@@ -379,9 +373,8 @@ class DSParser {
     //   }
     // }
 
-    for (const key in chProps) {
+    for (const key in chProps)
       Class += `${sp}${sp}${sp}this._${key} = ${chProps[key].value}\n`
-    }
 
     for (const key in newProps) {
       const newProp = newProps[key]
@@ -391,9 +384,8 @@ class DSParser {
       afterClass += `${this.fileName}.property('${key}', '${newProp.type}', '${newProp.value}')\n`
     }
 
-    for (const key in slots) {
+    for (const key in slots)
       afterClass += `${this.fileName}.change('${key}', function(value, old) ${slots[key].value})\n`
-    }
 
     Class += '\n    }'
     Class += '\n}\n\n'
@@ -414,35 +406,31 @@ class DSParser {
   checkComponentName (str) {
     if (!str) return
 
-    if (!/^[A-Z]+$/.test(str[0])) {
+    if (!/^[A-Z]+$/.test(str[0]))
       return this.logError(1)
-    }
 
     let compNameCheck = /[^A-Za-z0-9]+/g.exec(str)
-    if (compNameCheck) {
+    if (compNameCheck)
       throw this.logError(2)
-    }
   }
 
   checkFirstLastBraces () {
     let strs = this.strs
 
-    if (strs[1].s !== '{') {
+    if (strs[1].s !== '{')
       throw this.logError(3)
-    }
-    if (strs[strs.length - 1].s !== '}' && strs[strs.length - 1].s[strs[strs.length - 1].s.length - 1] !== '}') {
+
+    if (strs[strs.length - 1].s !== '}' && strs[strs.length - 1].s[strs[strs.length - 1].s.length - 1] !== '}')
       throw this.logError(4)
-    }
   }
 
   checkVar (name, type) {
     // TODO: check first symbol (not digit or big num), disable symbols
-    if (varTypes.indexOf(type.s) === -1) {
+    if (varTypes.indexOf(type.s) === -1)
       this.logError(11, type.l, type.c - 1, type.s.length)
-    }
-    if (varTypes.indexOf(name.s) !== -1 || varDisableNames.indexOf(name.s) !== -1) {
+
+    if (varTypes.indexOf(name.s) !== -1 || varDisableNames.indexOf(name.s) !== -1)
       this.logError(8, name.l, name.c - 2, name.s.length)
-    }
   }
 
   checkJS (func) {
