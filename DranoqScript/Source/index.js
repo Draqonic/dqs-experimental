@@ -354,49 +354,60 @@ class DSParser {
     // }
     // console.timeEnd(1)
 
-    let sp = ' '.repeat(4)
+    let sp = ' '.repeat(2)
     let Class = `class ${this.fileName} extends ${this.componentName} {\n${sp}constructor() {\n${sp}${sp}super()\n`
     let afterClass = ''
 
-    if (newProps.length > 0) {
-      Class += `${sp}${sp}this.addProperties([`
+    // if (newProps.length > 0) {
+    //   Class += `${sp}${sp}this.addProperties([`
 
-      for (const key in newProps) {
-        let newProp = newProps[key]
-        Class += `[!!!'${key}', '${newProp.type}'`
-        Class += '], '
-      }
-      Class += '])'
+    //   for (const key in newProps) {
+    //     let newProp = newProps[key]
+    //     Class += `[!!!'${key}', '${newProp.type}'`
+    //     Class += '], '
+    //   }
+    //   Class += '])'
+    // }
+
+    // for (const key in newProps) {
+    //   let newProp = newProps[key]
+    //   if (newProp.value) {
+    //     if (newProp.value[0] === '{' && newProp.value[newProp.value.length - 1] === '}') { // TODO
+    //       newProp.value = newProp.value.substr(1, newProp.value.length - 2)
+    //     }
+    //     Class += `${sp}${sp}this._${key} = ${newProp.value.replace(/\s+/g, ' ').trim()}\n`
+    //   }
+    // }
+
+    for (const key in chProps) {
+      Class += `${sp}${sp}${sp}this._${key} = ${chProps[key].value}\n`
     }
 
     for (const key in newProps) {
-      let newProp = newProps[key]
-      if (newProp.value) {
-        if (newProp.value[0] === '{' && newProp.value[newProp.value.length - 1] === '}') { // TODO
-          newProp.value = newProp.value.substr(1, newProp.value.length - 2)
-        }
-        Class += `${sp}${sp}this._${key} = ${newProp.value.replace(/\s+/g, ' ').trim()}\n`
+      const newProp = newProps[key]
+      if (newProp.value[0] === '{' && newProp.value[newProp.value.length - 1] === '}') { // TODO!!!
+        continue
       }
-    }
-
-    for (const key in chProps) {
-      Class += `${sp}${sp}this._${key} = ${chProps[key].value}\n`
+      afterClass += `${this.fileName}.property('${key}', '${newProp.type}', '${newProp.value}')\n`
     }
 
     for (const key in slots) {
-      Class += `${sp}${sp}this.onChange('${key}', function(value, old) ${slots[key].value})\n`
+      afterClass += `${this.fileName}.change('${key}', function(value, old) ${slots[key].value})\n`
     }
 
     Class += '\n    }'
     Class += '\n}\n\n'
 
-    Class += `const ${id} = new ${this.fileName}()\n` // TODO: replace id to random, set id by property
+    // Class += `const ${id} = new ${this.fileName}()\n` // TODO: replace id to random, set id by property
 
     // for(const kek of slots) {
     //  Class += `${id}.${kek.name} = function(value, old) ${kek.value}\n`
     // }
 
+    log('class:')
     log(Class)
+    log('afterClass:')
+    log(afterClass)
     // let bar = 'sss'
   }
 
